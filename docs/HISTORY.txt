@@ -1,0 +1,8 @@
+Changelog
+=========
+
+0.1 (2011-11-06)
+----------------
+- Initial release. N3 data for places: labels, comments, representative point,
+  rough location, connections and references with identifiers.
+

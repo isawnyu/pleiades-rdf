@@ -1,0 +1,15 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:five="http://namespaces.zope.org/five"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="pleiades.rdf">
+
+  <browser:view
+    for="Products.PleiadesEntity.content.interfaces.IPlace"
+    name="n3"
+    class=".browser.PlaceGraph"
+    permission="zope2.View"
+    allowed_interface=".browser.IGraph"
+    />
+
+</configure>
