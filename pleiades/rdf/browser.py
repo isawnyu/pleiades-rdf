@@ -2,9 +2,10 @@
 
 import logging
 import geojson
-from rdflib import BNode, Literal, Namespace, RDF, URIRef
+from rdflib import Literal, Namespace, RDF, URIRef
 from rdflib.graph import Graph
 from shapely.geometry import asShape, box
+from shapely import wkt
 
 from zope.interface import implements, Interface
 from zope.publisher.browser import BrowserView
@@ -185,6 +186,10 @@ class PlaceGraph(BrowserView):
                         e,
                         OSGEO['asGeoJSON'],
                         Literal(geojson.dumps(bounds.__geo_interface__))))
+                    g.add((
+                        e,
+                        OSGEO['asWKT'],
+                        Literal(wkt.dumps(bounds))))
 
         # connects with
         for f in (
@@ -203,6 +208,9 @@ class PlaceGraph(BrowserView):
 
     def __call__(self):
         self.request.response.setStatus(200)
-        self.request.response.setHeader('Content-Type', "text/n3; charset=utf-8")
-        return self.graph().serialize(format='n3')
+        self.request.response.setHeader(
+            'Content-Type', "text/turtle; charset=utf-8")
+        self.request.response.setHeader(
+            'Content-Disposition', "filename=%s.ttl" % self.context.getId())
+        return self.graph().serialize(format='turtle')
 

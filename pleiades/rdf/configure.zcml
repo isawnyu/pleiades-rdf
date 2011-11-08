@@ -6,7 +6,7 @@
 
   <browser:view
     for="Products.PleiadesEntity.content.interfaces.IPlace"
-    name="n3"
+    name="turtle"
     class=".browser.PlaceGraph"
     permission="zope2.View"
     allowed_interface=".browser.IGraph"

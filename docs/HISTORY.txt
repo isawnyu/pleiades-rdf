@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.2.1 (2011-11-08)
+------------------
+- Add WKT to geometry data.
+
+0.2 (2011-11-07)
+----------------
+- Switch to Turtle format, add content disposition header to view.
+
 0.1 (2011-11-06)
 ----------------
 - Initial release. N3 data for places: labels, comments, representative point,

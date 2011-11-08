@@ -40,5 +40,5 @@ if __name__ == '__main__':
         context = makerequest(place)
         g += PlaceGraph(b.getObject(), context.REQUEST).graph()
 
-    sys.stdout.write(g.serialize(format='n3'))
+    sys.stdout.write(g.serialize(format='turtle'))
 
