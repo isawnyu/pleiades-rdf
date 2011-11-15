@@ -14,6 +14,7 @@ from Products.CMFCore.utils import getToolByName
 
 from pleiades.geographer.geo import IGeoreferenced, location_precision
 from pleiades.json.browser import wrap
+from pleiades import capgrids
 
 FOAF_URI = "http://xmlns.com/foaf/0.1/"
 FOAF = Namespace(FOAF_URI)
@@ -37,6 +38,8 @@ OSSPATIAL_URI = "http://data.ordnancesurvey.co.uk/ontology/spatialrelations/"
 OSSPATIAL = Namespace(OSSPATIAL_URI)
 
 PLACES = "http://pleiades.stoa.org/places/"
+
+EXTS = {'turtle': '.ttl', 'pretty-xml': '.rdf'}
 
 log = logging.getLogger("pleiades.rdf")
 
@@ -170,26 +173,42 @@ class PlaceGraph(BrowserView):
         elif loc_prec == 'rough':
             for loc in locs:
                 ref = loc.getLocation()
-                if ref and ref.startswith('http://atlantides.org/capgrids'):
-                    bounds = box(*IGeoreferenced(loc).bounds)
-                    g.add((
-                        context_subj,
-                        OSSPATIAL['within'],
-                        URIRef(ref)))
-                    e = URIRef(ref.rstrip("/") + "/extent") # the grid's extent
-                    g.add((e, RDF.type, OSGEO['AbstractGeometry']))
-                    g.add((
-                        URIRef(ref),
-                        OSGEO['extent'],
-                        e))
-                    g.add((
-                        e,
-                        OSGEO['asGeoJSON'],
-                        Literal(geojson.dumps(bounds.__geo_interface__))))
-                    g.add((
-                        e,
-                        OSGEO['asWKT'],
-                        Literal(wkt.dumps(bounds))))
+                gridbase = "http://atlantides.org/capgrids/"
+                if ref and ref.startswith(gridbase):
+                    params = ref.rstrip("/")[len(gridbase):].split("/")
+                    if len(params) == 1:
+                        mapnum = params[0]
+                        grids = [None]
+                    elif len(params) == 2:
+                        mapnum = params[0]
+                        grids = [v.upper() for v in params[1].split("+")]
+                    else:
+                        log.error("Invalid location identifier %s" % ref)
+                        continue
+                    for grid in grids:
+                        grid_uri = gridbase + mapnum + "#" + (grid or "this")
+                        bounds = capgrids.box(mapnum, grid)
+                        shape = box(*bounds)
+
+                        g.add((
+                            context_subj,
+                            OSSPATIAL['within'],
+                            URIRef(grid_uri)))
+
+                        e = URIRef(grid_uri + "-extent") # the grid's extent
+                        g.add((e, RDF.type, OSGEO['AbstractGeometry']))
+                        g.add((
+                            URIRef(grid_uri),
+                            OSGEO['extent'],
+                            e))
+                        g.add((
+                            e,
+                            OSGEO['asGeoJSON'],
+                            Literal(geojson.dumps(shape))))
+                        g.add((
+                            e,
+                            OSGEO['asWKT'],
+                            Literal(wkt.dumps(shape))))
 
         # connects with
         for f in (
@@ -206,6 +225,8 @@ class PlaceGraph(BrowserView):
 
         return g
 
+class PlaceGraphTurtle(PlaceGraph):
+
     def __call__(self):
         self.request.response.setStatus(200)
         self.request.response.setHeader(
@@ -213,4 +234,14 @@ class PlaceGraph(BrowserView):
         self.request.response.setHeader(
             'Content-Disposition', "filename=%s.ttl" % self.context.getId())
         return self.graph().serialize(format='turtle')
+
+class PlaceGraphRDF(PlaceGraph):
+
+    def __call__(self):
+        self.request.response.setStatus(200)
+        self.request.response.setHeader(
+            'Content-Type', "application/rdf+xml")
+        self.request.response.setHeader(
+            'Content-Disposition', "filename=%s.rdf" % self.context.getId())
+        return self.graph().serialize(format='pretty-xml')
 

@@ -7,7 +7,15 @@
   <browser:view
     for="Products.PleiadesEntity.content.interfaces.IPlace"
     name="turtle"
-    class=".browser.PlaceGraph"
+    class=".browser.PlaceGraphTurtle"
+    permission="zope2.View"
+    allowed_interface=".browser.IGraph"
+    />
+
+  <browser:view
+    for="Products.PleiadesEntity.content.interfaces.IPlace"
+    name="rdf"
+    class=".browser.PlaceGraphRDF"
     permission="zope2.View"
     allowed_interface=".browser.IGraph"
     />
