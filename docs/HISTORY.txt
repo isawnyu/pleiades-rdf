@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.4 (2011-11-16)
+----------------
+- Add xml:lang for attested names.
+
 0.4 (2011-11-15)
 ----------------
 - Add a classic application/rdf+xml view.

@@ -98,28 +98,32 @@ class PlaceGraph(BrowserView):
             catalog.getIndexDataForRID(
                 b.getRID())['average_rating'] for b in brains]
         rated_names = sorted(
-            zip(
-                name_ratings, 
-                [o.getNameAttested() or o.getNameTransliterated() for o in objs]),
+            zip(name_ratings, objs),
             reverse=True)
         
-        for rating, name in rated_names[:1]:
+        for rating, obj in rated_names[:1]:
+            name = Literal(
+                obj.getNameAttested() or obj.getNameTransliterated(),
+                obj.getNameLanguage() or None)
             if rating and rating[0] > 0.0:
                 g.add((
                     context_subj,
                     SKOS['prefLabel'],
-                    Literal(name)))
+                    name))
             else:
                 g.add((
                     context_subj,
                     SKOS['altLabel'],
-                    Literal(name)))
+                    name))
         
         for rating, name in rated_names[1:]:
+            name = Literal(
+                obj.getNameAttested() or obj.getNameTransliterated(),
+                obj.getNameLanguage() or None)
             g.add((
                 context_subj,
                 SKOS['altLabel'], 
-                Literal(name)))
+                name))
         
         ## representative point
         xs = []
