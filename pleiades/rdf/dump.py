@@ -34,8 +34,7 @@ if __name__ == '__main__':
     for b in catalog.searchResults(
         portal_type='Place',
         review_state='published',
-        sort_on='getId',
-        sort_limit=10)[:10]:
+        sort_on='getId'):
         place = b.getObject()
         context = makerequest(place)
         g += PlaceGraph(b.getObject(), context.REQUEST).graph()
