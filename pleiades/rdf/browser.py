@@ -116,7 +116,7 @@ class PlaceGraph(BrowserView):
                     SKOS['altLabel'],
                     name))
         
-        for rating, name in rated_names[1:]:
+        for rating, obj in rated_names[1:]:
             name = Literal(
                 obj.getNameAttested() or obj.getNameTransliterated(),
                 obj.getNameLanguage() or None)

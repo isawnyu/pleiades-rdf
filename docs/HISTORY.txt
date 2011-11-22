@@ -1,7 +1,11 @@
 Changelog
 =========
 
-0.4 (2011-11-16)
+0.4.2 (2011-11-22)
+------------------
+- Fix bug in serialization of attested names.
+
+0.4.1 (2011-11-16)
 ----------------
 - Add xml:lang for attested names.
 
