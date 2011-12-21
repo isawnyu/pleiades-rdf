@@ -225,7 +225,10 @@ class PlaceGraph(BrowserView):
         # seeAlso
         for c in self.context.getReferenceCitations():
             if c.get('identifier'):
-                g.add((context_subj, RDFS['seeAlso'], URIRef(c.get('identifier'))))
+                g.add((
+                    context_subj, 
+                    RDFS['seeAlso'], 
+                    URIRef(c.get('identifier').strip()) ))
 
         return g
 
