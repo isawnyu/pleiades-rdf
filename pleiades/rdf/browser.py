@@ -224,7 +224,8 @@ class PlaceGraph(BrowserView):
 
         # seeAlso
         for c in self.context.getReferenceCitations():
-            if c.get('identifier'):
+            identifier = c.get('identifier')
+            if identifier and identifier.startswith("http://"):
                 g.add((
                     context_subj, 
                     RDFS['seeAlso'], 

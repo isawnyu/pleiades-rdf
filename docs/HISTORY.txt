@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.4.4 (2012-01-17)
+------------------
+- Check that reference identifiers start with "http://" before writing
+  a seeAlso triple.
+
+0.4.3 (2011-12-21)
+------------------
+- Check for existence of identifier before writing a seeAlso triple.
+
 0.4.2 (2011-11-22)
 ------------------
 - Fix bug in serialization of attested names.
