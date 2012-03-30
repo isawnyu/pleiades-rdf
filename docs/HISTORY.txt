@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.4.5 (2012-03-30)
+------------------
+- Add modern or Barrington Atlas grid location as dcterms:coverage.
+
 0.4.4 (2012-01-17)
 ------------------
 - Check that reference identifiers start with "http://" before writing

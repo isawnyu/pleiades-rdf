@@ -4,6 +4,7 @@ import logging
 import geojson
 from rdflib import Literal, Namespace, RDF, URIRef
 from rdflib.graph import Graph
+import re
 from shapely.geometry import asShape, box
 from shapely import wkt
 
@@ -37,6 +38,9 @@ SPATIAL = Namespace(SPATIAL_URI)
 OSSPATIAL_URI = "http://data.ordnancesurvey.co.uk/ontology/spatialrelations/"
 OSSPATIAL = Namespace(OSSPATIAL_URI)
 
+DCTERMS_URI = "http://purl.org/dc/terms/"
+DCTERMS = Namespace(DCTERMS_URI)
+
 PLACES = "http://pleiades.stoa.org/places/"
 
 EXTS = {'turtle': '.ttl', 'pretty-xml': '.rdf'}
@@ -62,6 +66,7 @@ class PlaceGraph(BrowserView):
         g.bind('foaf', FOAF)
         g.bind('osgeo', OSGEO)
         g.bind('osspatial', OSSPATIAL)
+        g.bind('dcterms', DCTERMS)
 
         context_page = PLACES + self.context.getId()
         context_subj = URIRef(context_page + "#this")
@@ -222,6 +227,14 @@ class PlaceGraph(BrowserView):
             feature_obj = URIRef(PLACES + f.getId() + "#this")
             g.add((context_subj, SPATIAL['C'], feature_obj))
 
+        # dcterms:coverage
+        coverage = geoContext(self.context)
+        if coverage:
+            g.add((
+                context_subj,
+                DCTERMS['coverage'],
+                Literal(coverage) ))
+
         # seeAlso
         for c in self.context.getReferenceCitations():
             identifier = c.get('identifier')
@@ -252,4 +265,17 @@ class PlaceGraphRDF(PlaceGraph):
         self.request.response.setHeader(
             'Content-Disposition', "filename=%s.rdf" % self.context.getId())
         return self.graph().serialize(format='pretty-xml')
+
+def geoContext(place):
+    note = place.getModernLocation() or ""
+    if not note:
+        descr = place.Description() or ""
+        match = re.search(r"cited: BAtlas (\d+) (\w+)", descr)
+        if match:
+            note = "Barrington Atlas grid %s %s" % (
+                match.group(1), match.group(2).capitalize())
+    note = unicode(note, "utf-8")
+    note = unicode(note.replace(unichr(174), unichr(0x2194)))
+    note = note.replace(unichr(0x2192), unichr(0x2194))
+    return note
 

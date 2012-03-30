@@ -11,6 +11,7 @@ from Testing.makerequest import makerequest
 from pleiades.dump import secure
 from pleiades.rdf.browser import PlaceGraph
 from pleiades.rdf.browser import FOAF, GEO, OSGEO, OSSPATIAL, RDFS, SKOS, SPATIAL
+from pleiades.rdf.browser import DCTERMS
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -29,6 +30,7 @@ if __name__ == '__main__':
     g.bind('foaf', FOAF)
     g.bind('osgeo', OSGEO)
     g.bind('osspatial', OSSPATIAL)
+    g.bind('dcterms', DCTERMS)
 
     catalog = site['portal_catalog']
     for b in catalog.searchResults(
