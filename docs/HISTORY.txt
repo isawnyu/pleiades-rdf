@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5 (2012-06-27)
+----------------
+- Add pleiades:hasFeatureType with links to Pleiades place-type vocabulary
+  items.
+
 0.4.5 (2012-03-30)
 ------------------
 - Add modern or Barrington Atlas grid location as dcterms:coverage.

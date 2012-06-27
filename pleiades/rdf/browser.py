@@ -42,6 +42,10 @@ DCTERMS_URI = "http://purl.org/dc/terms/"
 DCTERMS = Namespace(DCTERMS_URI)
 
 PLACES = "http://pleiades.stoa.org/places/"
+PLEIADES_URI = "http://pleiades.stoa.org/places/vocab#"
+PLEIADES = Namespace(PLEIADES_URI)
+
+PLACE_TYPE = "http://pleiades.stoa.org/vocabularies/place-type/"
 
 EXTS = {'turtle': '.ttl', 'pretty-xml': '.rdf'}
 
@@ -67,6 +71,7 @@ class PlaceGraph(BrowserView):
         g.bind('osgeo', OSGEO)
         g.bind('osspatial', OSSPATIAL)
         g.bind('dcterms', DCTERMS)
+        g.bind('pleiades', PLEIADES)
 
         context_page = PLACES + self.context.getId()
         context_subj = URIRef(context_page + "#this")
@@ -91,6 +96,14 @@ class PlaceGraph(BrowserView):
             context_subj,
             RDFS['comment'], 
             Literal(self.context.Description())))
+
+        # Place or feature types
+        for val in self.context.getPlaceType():
+            if val:
+                g.add((
+                    context_subj,
+                    PLEIADES['hasFeatureType'],
+                    URIRef(PLACE_TYPE + val)))
 
         # Names as skos:label and prefLabel
         folder_path = "/".join(self.context.getPhysicalPath())
