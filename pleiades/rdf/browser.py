@@ -45,7 +45,7 @@ PLACES = "http://pleiades.stoa.org/places/"
 PLEIADES_URI = "http://pleiades.stoa.org/places/vocab#"
 PLEIADES = Namespace(PLEIADES_URI)
 
-PLACE_TYPE = "http://pleiades.stoa.org/vocabularies/place-type/"
+PLACE_TYPE = "http://pleiades.stoa.org/vocabularies/place-types/"
 
 EXTS = {'turtle': '.ttl', 'pretty-xml': '.rdf'}
 
