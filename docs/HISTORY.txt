@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.6 (2012-06-30)
+----------------
+- Write out data about referenced vocabulary items using SKOS.
+
 0.5 (2012-06-27)
 ----------------
 - Add pleiades:hasFeatureType with links to Pleiades place-type vocabulary

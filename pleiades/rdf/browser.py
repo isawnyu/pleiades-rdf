@@ -61,6 +61,7 @@ class PlaceGraph(BrowserView):
     def graph(self):
         catalog = getToolByName(self.context, 'portal_catalog')
         wftool = getToolByName(self.context, 'portal_workflow')
+        vocabs = getToolByName(self.context, 'portal_vocabularies')
 
         g = Graph()
         g.bind('rdfs', RDFS)
@@ -98,12 +99,36 @@ class PlaceGraph(BrowserView):
             Literal(self.context.Description())))
 
         # Place or feature types
-        for val in self.context.getPlaceType():
-            if val:
+        vocab = vocabs.getVocabularyByName('place-types').getTarget()
+
+        for pt in self.context.getPlaceType():
+            if pt:
+                item = vocab[pt]
+                iurl = item.absolute_url()
+                label = vocab[pt].getTermKey()
+                note = vocab[pt].getTermValue()
+                defn = vocab[pt].Description()
                 g.add((
                     context_subj,
                     PLEIADES['hasFeatureType'],
-                    URIRef(PLACE_TYPE + val)))
+                    URIRef(iurl)))
+                g.add((
+                    URIRef(iurl),
+                    RDF.type,
+                    SKOS['Concept']))
+                g.add((
+                    URIRef(iurl),
+                    SKOS['prefLabel'],
+                    Literal(item.getTermKey(), "en")))
+                g.add((
+                    URIRef(iurl),
+                    SKOS['scopeNote'],
+                    Literal(item.getTermValue(), "en")))
+                if defn:
+                    g.add((
+                        URIRef(iurl),
+                        SKOS['definition'],
+                        Literal(defn, "en")))
 
         # Names as skos:label and prefLabel
         folder_path = "/".join(self.context.getPhysicalPath())
