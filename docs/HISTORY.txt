@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.7 (2012-07-02)
+----------------
+- Refactor graph making classes to be shared by views and dumps.
+
 0.6 (2012-06-30)
 ----------------
 - Write out data about referenced vocabulary items using SKOS.
