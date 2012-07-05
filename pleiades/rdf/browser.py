@@ -23,7 +23,8 @@ class PlaceGraph(BrowserView):
         grapher = PlaceGrapher(self.context, self.request)
         p = grapher.place(self.context)
         s = grapher.skos(self.context)
-        return p + s
+        p += s
+        return p
 
 
 class PlaceGraphTurtle(PlaceGraph):
