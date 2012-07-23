@@ -41,6 +41,7 @@ if __name__ == '__main__':
 
     catalog = site['portal_catalog']
     for b in catalog.searchResults(
+            path={'query': "/plone/places"},
             portal_type='Place',
             review_state='published',
             sort_on='getId'):
@@ -50,5 +51,18 @@ if __name__ == '__main__':
         skos += grapher.skos(obj)
 
     places += skos
+
+    # Finally, the resolved duplicates
+    dupes = place_graph()
+    for b in catalog.searchResults(
+            path={'query': "/plone/places"},
+            portal_type='Link',
+            review_state='published',
+            sort_on='getId'):
+        obj = b.getObject()
+        obj.REQUEST = request.REQUEST
+        dupes += grapher.link(obj)
+
+    places += dupes
     sys.stdout.write(places.serialize(format='turtle'))
 

@@ -1,6 +1,7 @@
 # Common classes and functions
 
 import re
+from urlparse import urlparse
 
 import geojson
 from pleiades import capgrids
@@ -35,6 +36,9 @@ SPATIAL = Namespace(SPATIAL_URI)
 OSSPATIAL_URI = "http://data.ordnancesurvey.co.uk/ontology/spatialrelations/"
 OSSPATIAL = Namespace(OSSPATIAL_URI)
 
+OWL_URI = "http://www.w3.org/2002/07/owl#"
+OWL = Namespace(OWL_URI)
+
 DCTERMS_URI = "http://purl.org/dc/terms/"
 DCTERMS = Namespace(DCTERMS_URI)
 
@@ -66,6 +70,7 @@ def place_graph():
     g.bind('dcterms', DCTERMS)
     g.bind('pleiades', PLEIADES)
     g.bind('skos', SKOS)
+    g.bind('owl', OWL)
     return g
 
 def skos_graph():
@@ -82,6 +87,26 @@ class PlaceGrapher(object):
         self.catalog = getToolByName(context, 'portal_catalog')
         self.wftool = getToolByName(context, 'portal_workflow')
         self.vocabs = getToolByName(context, 'portal_vocabularies')
+
+    def link(self, context):
+        g = place_graph()
+        
+        purl = context.absolute_url()
+        vh_root = context.REQUEST.get('VH_ROOT')
+        if vh_root:
+            purl = purl.replace(vh_root, '')
+        context_page = purl
+        context_subj = URIRef(context_page + "#this")
+        
+        remote = context.getRemoteUrl()
+        if remote:
+            uri = "/".join([
+                "http:/", 
+                urlparse(context_page)[1],
+                remote.rstrip("/")])
+            g.add((context_subj, OWL['sameAs'], URIRef(uri + "#this")))
+        
+        return g
 
     def place(self, context):
         g = place_graph()
@@ -118,7 +143,9 @@ class PlaceGrapher(object):
         vocab = self.vocabs.getVocabularyByName('place-types').getTarget()
         pcats = set(filter(None, context.getPlaceType()))
         for pcat in pcats:
-            item = vocab[pcat]
+            item = vocab.get(pcat)
+            if not item:
+                continue
             if not getattr(item, 'REQUEST', None):
                 item.REQUEST = getattr(context, 'REQUEST')
             iurl = item.absolute_url()
@@ -292,16 +319,18 @@ class PlaceGrapher(object):
         pcats = set(filter(None, context.getPlaceType()))
 
         for pcat in pcats:
-            item = vocab[pcat]
+            item = vocab.get(pcat)
+            if not item:
+                continue
             if not getattr(item, 'REQUEST', None):
                 item.REQUEST = getattr(context, 'REQUEST')
             iurl = item.absolute_url()
             vh_root = item.REQUEST.get('VH_ROOT')
             if vh_root:
                 iurl = iurl.replace(vh_root, '')
-            label = vocab[pcat].getTermKey()
-            note = vocab[pcat].getTermValue()
-            defn = vocab[pcat].Description()
+            label = item.getTermKey()
+            note = item.getTermValue()
+            defn = item.Description()
             g.add((
                 URIRef(iurl),
                 RDF.type,

@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.8 (2012-07-23)
+----------------
+- Dodge invalid place categories and sameAs map duplicates to master places.
+
 0.7 (2012-07-02)
 ----------------
 - Refactor graph making classes to be shared by views and dumps.
