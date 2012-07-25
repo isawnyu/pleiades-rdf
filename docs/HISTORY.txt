@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.8.1 (2012-07-25)
+------------------
+- Remove extra slashes from Pleiades URIRefs.
+
 0.8 (2012-07-23)
 ----------------
 - Dodge invalid place categories and sameAs map duplicates to master places.

@@ -103,7 +103,7 @@ class PlaceGrapher(object):
             uri = "/".join([
                 "http:/", 
                 urlparse(context_page)[1],
-                remote.rstrip("/")])
+                remote.strip("/")])
             g.add((context_subj, OWL['sameAs'], URIRef(uri + "#this")))
         
         return g
