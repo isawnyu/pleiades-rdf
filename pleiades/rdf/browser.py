@@ -35,7 +35,9 @@ class PlaceGraphTurtle(PlaceGraph):
             'Content-Type', "text/turtle; charset=utf-8")
         self.request.response.setHeader(
             'Content-Disposition', "filename=%s.ttl" % self.context.getId())
-        return self.graph().serialize(format='turtle')
+        g = self.graph()
+        import pdb; pdb.set_trace()
+        return g.serialize(format='turtle')
 
 
 class PlaceGraphRDF(PlaceGraph):

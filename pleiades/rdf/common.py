@@ -4,8 +4,9 @@ import re
 from urlparse import urlparse
 
 import geojson
+import logging
 from pleiades import capgrids
-from rdflib import Literal, Namespace, RDF, URIRef
+from rdflib import BNode, Literal, Namespace, RDF, URIRef
 from rdflib.graph import Graph
 from shapely.geometry import asShape, box
 from shapely import wkt
@@ -14,6 +15,12 @@ from Products.CMFCore.utils import getToolByName
 
 from pleiades.geographer.geo import IGeoreferenced, location_precision
 from pleiades.json.browser import wrap
+
+CITO_URI = "http://purl.org/spar/cito/"
+CITO = Namespace(CITO_URI)
+
+DCTERMS_URI = "http://purl.org/dc/terms/"
+DCTERMS = Namespace(DCTERMS_URI)
 
 FOAF_URI = "http://xmlns.com/foaf/0.1/"
 FOAF = Namespace(FOAF_URI)
@@ -43,8 +50,14 @@ DCTERMS_URI = "http://purl.org/dc/terms/"
 DCTERMS = Namespace(DCTERMS_URI)
 
 PLACES = "http://pleiades.stoa.org/places/"
+
 PLEIADES_URI = "http://pleiades.stoa.org/places/vocab#"
 PLEIADES = Namespace(PLEIADES_URI)
+
+PROVO_URI = "http://www.w3.org/TR/prov-o/#"
+PROV = Namespace(PROVO_URI)
+
+log = logging.getLogger('pleiades.dump')
 
 def geoContext(place):
     note = place.getModernLocation() or ""
@@ -59,8 +72,9 @@ def geoContext(place):
     note = note.replace(unichr(0x2192), unichr(0x2194))
     return note
 
-def place_graph():
-    g = Graph()
+def bind_all(g):
+    g.bind('cito', CITO)
+    g.bind('dcterms', DCTERMS)
     g.bind('rdfs', RDFS)
     g.bind('spatial', SPATIAL)
     g.bind('geo', GEO)
@@ -69,14 +83,42 @@ def place_graph():
     g.bind('osspatial', OSSPATIAL)
     g.bind('dcterms', DCTERMS)
     g.bind('pleiades', PLEIADES)
+    g.bind('prov', PROV)
     g.bind('skos', SKOS)
     g.bind('owl', OWL)
+    return g
+
+def place_graph():
+    g = bind_all(Graph())
     return g
 
 def skos_graph():
     g = Graph()
     g.bind('skos', SKOS)
     return g
+
+
+def user_info(context, username):
+    mtool = getToolByName(context, 'portal_membership')
+    if username == 'T. Elliott': un = 'thomase'
+    elif username == 'S. Gillies': un = 'sgillies'
+    else: un = username
+    member = mtool.getMemberById(un)
+    if member:
+        return {
+            "id": member.getId(), 
+            "fullname": member.getProperty('fullname'),
+            'url': "http://pleiades.stoa.org/author/" + id}
+    else:
+        return {"id": None, "fullname": un, 'url': None}
+
+def principals(context):
+    creators = list(context.Creators())
+    contributors = list(context.Contributors())
+    if ("sgillies" in creators and 
+            ("sgillies" in contributors or "S. Gillies" in contributors)):
+        creators.remove("sgillies")
+    return creators, contributors
 
 
 class PlaceGrapher(object):
@@ -108,36 +150,110 @@ class PlaceGrapher(object):
         
         return g
 
-    def place(self, context):
+    def dcterms(self, context, g, subj):
+        
+        g.add((
+            subj,
+            DCTERMS['title'], 
+            Literal(context.Title())))
+        g.add((
+            subj,
+            DCTERMS['description'], 
+            Literal(context.Description())))
+
+        creators, contributors = principals(context)
+
+        for principal in creators:
+            p = user_info(context, principal)
+            url = p.get('url')
+            if url:
+                pnode = URIRef(url)
+            else:
+                pnode = BNode()
+            g.add((subj, DCTERMS['creator'], pnode))
+            if not url and p.get('fullname'):
+                g.add((pnode, RDF.type, FOAF['Person']))
+                g.add((pnode, FOAF['name'], p.get('fullname')))
+
+        for principal in contributors:
+            p = user_info(context, principal)
+            url = p.get('url')
+            if url:
+                pnode = URIRef(url)
+            else:
+                pnode = BNode()
+            g.add((subj, DCTERMS['contributor'], pnode))
+            if not url and p.get('fullname'):
+                g.add((pnode, RDF.type, FOAF['Person']))
+                g.add((pnode, FOAF['name'], p.get('fullname')))
+        
+        return g
+
+    def temporal(self, context, g, subj, vocabs=True):
+        
+        for attestation in context.getAttestations():
+            g.add((
+                subj, 
+                PLEIADES['during'],
+                URIRef("http://pleiades.stoa.org/vocabularies/time-periods/" +
+                    attestation['period'])))
+        
+        span = TimeSpanWrapper(context).timeSpan
+        if span:
+            g.add((
+                subj, 
+                PLEIADES['start_date'],
+                Literal(timeSpan[0])))
+            g.add((
+                subj, 
+                PLEIADES['end_date'],
+                Literal(timeSpan[1])))
+
+        return g
+
+    def provenance(self, context, g, subj):
+        pnode = BNode()
+        g.add((subj, PROV['wasDerivedFrom'], pnode))
+        g.add((pnode, RDFS['label'], Literal(context.getInitialProvenance())))
+        return g
+
+    def place(self, context, vocabs=True):
+        """Create a graph centered on a Place and its Feature."""
         g = place_graph()
         
         purl = context.absolute_url()
         vh_root = context.REQUEST.get('VH_ROOT')
         if vh_root:
             purl = purl.replace(vh_root, '')
+        
         context_page = purl
-        context_subj = URIRef(context_page + "#this")
+        context_subj = URIRef(context_page)
+        feature_subj = URIRef(context_page + "#this")
         
         # Type
-        g.add((context_subj, RDF.type, SPATIAL['Feature']))
+        g.add((context_subj, RDF.type, PLEIADES['Place']))
+        g.add((feature_subj, RDF.type, SPATIAL['Feature']))
 
         # primary topic
         g.add((
-            context_subj,
+            feature_subj,
             FOAF['primaryTopicOf'],
-            URIRef(context_page)))
+            context_subj))
 
         # title as rdfs:label
         g.add((
-            context_subj,
+            feature_subj,
             RDFS['label'], 
             Literal(context.Title())))
 
         # description as rdfs:comment
         g.add((
-            context_subj,
+            feature_subj,
             RDFS['comment'], 
             Literal(context.Description())))
+
+        g = self.dcterms(context, g, context_subj)
+        g = self.provenance(context, g, context_subj)
 
         # Place or feature types
         vocab = self.vocabs.getVocabularyByName('place-types').getTarget()
@@ -195,6 +311,26 @@ class PlaceGrapher(object):
                 SKOS['altLabel'], 
                 name))
         
+        # Names
+        for rating, obj in rated_names:
+            
+            name_subj = URIRef(context_page + "/" + obj.getId())
+            g.add((context_subj, PLEIADES['hasName'], name_subj))
+            g.add((name_subj, RDF.type, PLEIADES['Name']))
+            g = self.dcterms(obj, g, name_subj)
+            g = self.temporal(obj, g, name_subj, vocabs=vocabs)
+            g = self.provenance(obj, g, name_subj)
+
+            nameAttested = obj.getNameAttested()
+            if nameAttested:
+                g.add((
+                    name_subj, 
+                    PLEIADES['nameAttested'], 
+                    Literal(nameAttested, obj.getNameLanguage() or None)))
+
+            for nr in obj.getNameTransliterated():
+                g.add((name_subj, PLEIADES['nameRomanized'], Literal(nr)))
+
         ## representative point
         xs = []
         ys = []
@@ -283,6 +419,72 @@ class PlaceGrapher(object):
                             e,
                             OSGEO['asWKT'],
                             Literal(wkt.dumps(shape))))
+
+        # Locations
+        for obj in locs:
+            
+            locn_subj = URIRef(context_page + "/" + obj.getId())
+            g.add((context_subj, PLEIADES['hasLocation'], locn_subj))
+            g.add((name_subj, RDF.type, PLEIADES['Location']))
+            g = self.dcterms(obj, g, locn_subj)
+            g = self.temporal(obj, g, locn_subj, vocabs=vocabs)
+            g = self.provenance(obj, g, name_subj)
+
+            ref = obj.getLocation()
+            gridbase = "http://atlantides.org/capgrids/"
+            if ref and ref.startswith(gridbase):
+                params = ref.rstrip("/")[len(gridbase):].split("/")
+                if len(params) == 1:
+                    mapnum = params[0]
+                    grids = [None]
+                elif len(params) == 2:
+                    mapnum = params[0]
+                    grids = [v.upper() for v in params[1].split("+")]
+                else:
+                    log.error("Invalid location identifier %s" % ref)
+                    continue
+                for grid in grids:
+                    grid_uri = gridbase + mapnum + "#" + (grid or "this")
+                    bounds = capgrids.box(mapnum, grid)
+                    shape = box(*bounds)
+
+                    g.add((
+                        locn_subj,
+                        OSSPATIAL['within'],
+                        URIRef(grid_uri)))
+
+                    e = URIRef(grid_uri + "-extent") # the grid's extent
+                    g.add((e, RDF.type, OSGEO['AbstractGeometry']))
+                    g.add((
+                        URIRef(grid_uri),
+                        OSGEO['extent'],
+                        e))
+                    g.add((
+                        e,
+                        OSGEO['asGeoJSON'],
+                        Literal(geojson.dumps(shape))))
+                    g.add((
+                        e,
+                        OSGEO['asWKT'],
+                        Literal(wkt.dumps(shape))))
+            
+            else:
+                try:
+                    f = wrap(obj, 0)
+                    if (f.geometry and 
+                            hasattr(f.geometry, '__geo_interface__')):
+                        shape = asShape(f)
+                        g.add((
+                            locn_subj,
+                            OSGEO['asGeoJSON'],
+                            Literal(geojson.dumps(shape))))
+                        g.add((
+                            locn_subj,
+                            OSGEO['asWKT'],
+                            Literal(wkt.dumps(shape))))
+                except:
+                    log.warn("Couldn't wrap and graph %s", obj)
+                    pass
 
         # connects with
         for f in (
