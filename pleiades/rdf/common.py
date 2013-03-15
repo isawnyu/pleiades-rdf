@@ -16,6 +16,8 @@ from Products.CMFCore.utils import getToolByName
 from pleiades.geographer.geo import IGeoreferenced, location_precision
 from pleiades.json.browser import wrap
 
+from Products.PleiadesEntity.browser.attestations import TimeSpanWrapper
+
 CITO_URI = "http://purl.org/spar/cito/"
 CITO = Namespace(CITO_URI)
 
@@ -45,9 +47,6 @@ OSSPATIAL = Namespace(OSSPATIAL_URI)
 
 OWL_URI = "http://www.w3.org/2002/07/owl#"
 OWL = Namespace(OWL_URI)
-
-DCTERMS_URI = "http://purl.org/dc/terms/"
-DCTERMS = Namespace(DCTERMS_URI)
 
 PLACES = "http://pleiades.stoa.org/places/"
 
@@ -173,7 +172,7 @@ class PlaceGrapher(object):
             g.add((subj, DCTERMS['creator'], pnode))
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
-                g.add((pnode, FOAF['name'], p.get('fullname')))
+                g.add((pnode, FOAF['name'], Literal(p.get('fullname'))))
 
         for principal in contributors:
             p = user_info(context, principal)
@@ -185,7 +184,7 @@ class PlaceGrapher(object):
             g.add((subj, DCTERMS['contributor'], pnode))
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
-                g.add((pnode, FOAF['name'], p.get('fullname')))
+                g.add((pnode, FOAF['name'], Literal(p.get('fullname'))))
         
         return g
 
@@ -196,18 +195,18 @@ class PlaceGrapher(object):
                 subj, 
                 PLEIADES['during'],
                 URIRef("http://pleiades.stoa.org/vocabularies/time-periods/" +
-                    attestation['period'])))
+                    attestation['timePeriod'])))
         
         span = TimeSpanWrapper(context).timeSpan
         if span:
             g.add((
                 subj, 
                 PLEIADES['start_date'],
-                Literal(timeSpan[0])))
+                Literal(span['start'])))
             g.add((
                 subj, 
                 PLEIADES['end_date'],
-                Literal(timeSpan[1])))
+                Literal(span['end'])))
 
         return g
 
@@ -216,6 +215,33 @@ class PlaceGrapher(object):
         g.add((subj, PROV['wasDerivedFrom'], pnode))
         g.add((pnode, RDFS['label'], Literal(context.getInitialProvenance())))
         return g
+
+    def references(self, context, g, subj):
+        mapping = {
+            'seeAlso': 'citesAsRelated', 'seeFurther': 'citesForInformation'}
+        # seeAlso
+        for c in context.getReferenceCitations():
+            identifier = c.get('identifier')
+            citation_type = c.get('type')
+            citation_range = c.get('range')
+            if (identifier and 
+                    identifier.startswith("http://") or
+                    identifier.startswith("doi") or
+                    identifier.startswith("issn") or
+                    identifier.startswith("ibsn")):
+                ref =  URIRef(c.get('identifier').strip())
+            else:
+                ref = BNode()
+            if citation_range:
+                g.add((ref, RDFS['label'], Literal(citation_range)))
+            g.add((subj, RDFS['seeAlso'], ref))
+            g.add((
+                subj, 
+                CITO[mapping.get(citation_type, citation_type)],
+                ref))
+
+            return g
+
 
     def place(self, context, vocabs=True):
         """Create a graph centered on a Place and its Feature."""
@@ -320,6 +346,7 @@ class PlaceGrapher(object):
             g = self.dcterms(obj, g, name_subj)
             g = self.temporal(obj, g, name_subj, vocabs=vocabs)
             g = self.provenance(obj, g, name_subj)
+            g = self.references(context, g, name_subj)
 
             nameAttested = obj.getNameAttested()
             if nameAttested:
@@ -328,7 +355,8 @@ class PlaceGrapher(object):
                     PLEIADES['nameAttested'], 
                     Literal(nameAttested, obj.getNameLanguage() or None)))
 
-            for nr in obj.getNameTransliterated():
+            for nr in obj.getNameTransliterated().split(','):
+                nr = nr.strip()
                 g.add((name_subj, PLEIADES['nameRomanized'], Literal(nr)))
 
         ## representative point
@@ -428,7 +456,8 @@ class PlaceGrapher(object):
             g.add((name_subj, RDF.type, PLEIADES['Location']))
             g = self.dcterms(obj, g, locn_subj)
             g = self.temporal(obj, g, locn_subj, vocabs=vocabs)
-            g = self.provenance(obj, g, name_subj)
+            g = self.provenance(obj, g, locn_subj)
+            g = self.references(context, g, locn_subj)
 
             ref = obj.getLocation()
             gridbase = "http://atlantides.org/capgrids/"
@@ -473,7 +502,7 @@ class PlaceGrapher(object):
                     f = wrap(obj, 0)
                     if (f.geometry and 
                             hasattr(f.geometry, '__geo_interface__')):
-                        shape = asShape(f)
+                        shape = asShape(f.geometry)
                         g.add((
                             locn_subj,
                             OSGEO['asGeoJSON'],
@@ -484,7 +513,7 @@ class PlaceGrapher(object):
                             Literal(wkt.dumps(shape))))
                 except:
                     log.warn("Couldn't wrap and graph %s", obj)
-                    pass
+                    raise
 
         # connects with
         for f in (
@@ -502,14 +531,7 @@ class PlaceGrapher(object):
                 DCTERMS['coverage'],
                 Literal(coverage) ))
 
-        # seeAlso
-        for c in context.getReferenceCitations():
-            identifier = c.get('identifier')
-            if identifier and identifier.startswith("http://"):
-                g.add((
-                    context_subj, 
-                    RDFS['seeAlso'], 
-                    URIRef(c.get('identifier').strip()) ))
+        g = self.references(context, g, context_subj)
 
         return g
 
