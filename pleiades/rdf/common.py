@@ -453,7 +453,7 @@ class PlaceGrapher(object):
             
             locn_subj = URIRef(context_page + "/" + obj.getId())
             g.add((context_subj, PLEIADES['hasLocation'], locn_subj))
-            g.add((name_subj, RDF.type, PLEIADES['Location']))
+            g.add((locn_subj, RDF.type, PLEIADES['Location']))
             g = self.dcterms(obj, g, locn_subj)
             g = self.temporal(obj, g, locn_subj, vocabs=vocabs)
             g = self.provenance(obj, g, locn_subj)
