@@ -107,7 +107,7 @@ def user_info(context, username):
         return {
             "id": member.getId(), 
             "fullname": member.getProperty('fullname'),
-            'url': "http://pleiades.stoa.org/author/" + id}
+            'url': "http://pleiades.stoa.org/author/" + member.getId()}
     else:
         return {"id": None, "fullname": un, 'url': None}
 
