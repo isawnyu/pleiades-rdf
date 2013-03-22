@@ -20,4 +20,21 @@
     allowed_interface=".browser.IGraph"
     />
 
+  <browser:view
+    for="pleiades.vocabularies.content.interfaces.IPleiadesVocabulary"
+    name="turtle"
+    class=".browser.VocabGraphTurtle"
+    permission="zope2.View"
+    allowed_interface=".browser.IGraph"
+    />
+
+  <browser:view
+    for="pleiades.vocabularies.content.interfaces.IPleiadesVocabulary"
+    name="rdf"
+    class=".browser.VocabGraphRDF"
+    permission="zope2.View"
+    allowed_interface=".browser.IGraph"
+    />
+
+
 </configure>

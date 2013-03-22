@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.10 (2013-03-22)
+-----------------
+- Document ontologies and vocabularies used in the README.
+- Massively expand the amount of information in Place RDF.
+- SKOS representations of Pleiades vocabularies.
+- A "streaming" dumper of RDF for all places that should not run out of
+  memory like previous one.
+
 0.8.1 (2012-07-25)
 ------------------
 - Remove extra slashes from Pleiades URIRefs.

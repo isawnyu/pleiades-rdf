@@ -11,6 +11,7 @@ from rdflib.graph import Graph
 from shapely.geometry import asShape, box
 from shapely import wkt
 
+from Acquisition import aq_inner, aq_parent
 from Products.CMFCore.utils import getToolByName
 
 from pleiades.geographer.geo import IGeoreferenced, location_precision
@@ -74,17 +75,17 @@ def geoContext(place):
 def bind_all(g):
     g.bind('cito', CITO)
     g.bind('dcterms', DCTERMS)
-    g.bind('rdfs', RDFS)
-    g.bind('spatial', SPATIAL)
-    g.bind('geo', GEO)
+    g.bind('owl', OWL)
     g.bind('foaf', FOAF)
+    g.bind('geo', GEO)
     g.bind('osgeo', OSGEO)
     g.bind('osspatial', OSSPATIAL)
-    g.bind('dcterms', DCTERMS)
+    g.bind('owl', OWL)
     g.bind('pleiades', PLEIADES)
     g.bind('prov', PROV)
+    g.bind('rdfs', RDFS)
     g.bind('skos', SKOS)
-    g.bind('owl', OWL)
+    g.bind('spatial', SPATIAL)
     return g
 
 def place_graph():
@@ -93,6 +94,8 @@ def place_graph():
 
 def skos_graph():
     g = Graph()
+    g.bind('dcterms', DCTERMS)
+    g.bind('foaf', FOAF)
     g.bind('skos', SKOS)
     return g
 
@@ -120,37 +123,23 @@ def principals(context):
     return creators, contributors
 
 
-class PlaceGrapher(object):
+class PleiadesGrapher(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.catalog = getToolByName(context, 'portal_catalog')
         self.wftool = getToolByName(context, 'portal_workflow')
-        self.vocabs = getToolByName(context, 'portal_vocabularies')
+        self.portal = getToolByName(context, 'portal_url').getPortalObject()
+        self.vocabs = self.portal['vocabularies']
 
-    def link(self, context):
-        g = place_graph()
-        
-        purl = context.absolute_url()
-        vh_root = context.REQUEST.get('VH_ROOT')
-        if vh_root:
-            purl = purl.replace(vh_root, '')
-        context_page = purl
-        context_subj = URIRef(context_page + "#this")
-        
-        remote = context.getRemoteUrl()
-        if remote:
-            uri = "/".join([
-                "http:/", 
-                urlparse(context_page)[1],
-                remote.strip("/")])
-            g.add((context_subj, OWL['sameAs'], URIRef(uri + "#this")))
-        
-        return g
+    def dcterms(self, context, g):
+        """Return a set of tuples covering DC metadata"""
 
-    def dcterms(self, context, g, subj):
-        
+        context_uri = context.absolute_url()
+        subj = URIRef(context_uri)
+
+        # Title, Description, and Modification Date
         g.add((
             subj,
             DCTERMS['title'], 
@@ -159,7 +148,19 @@ class PlaceGrapher(object):
             subj,
             DCTERMS['description'], 
             Literal(context.Description())))
-
+        g.add((
+            subj,
+            DCTERMS['modified'], 
+            Literal(context.ModificationDate())))
+        
+        # Tags
+        for tag in context.Subject():
+            g.add((
+                subj,
+                DCTERMS['subject'], 
+                Literal(tag)))
+        
+        # Authors
         creators, contributors = principals(context)
 
         for principal in creators:
@@ -188,15 +189,43 @@ class PlaceGrapher(object):
         
         return g
 
+
+class PlaceGrapher(PleiadesGrapher):
+
+    def link(self, context):
+        g = place_graph()
+        
+        purl = context.absolute_url()
+        vh_root = context.REQUEST.get('VH_ROOT')
+        if vh_root:
+            purl = purl.replace(vh_root, '')
+        context_page = purl
+        context_subj = URIRef(context_page + "#this")
+        
+        remote = context.getRemoteUrl()
+        if remote:
+            uri = "/".join([
+                "http:/", 
+                urlparse(context_page)[1],
+                remote.strip("/")])
+            g.add((context_subj, OWL['sameAs'], URIRef(uri + "#this")))
+        
+        return g
+
     def temporal(self, context, g, subj, vocabs=True):
         
+        periods = self.vocabs['time-periods']
+
         for attestation in context.getAttestations():
             g.add((
                 subj, 
                 PLEIADES['during'],
-                URIRef("http://pleiades.stoa.org/vocabularies/time-periods/" +
+                URIRef(periods.absolute_url() + "/" + 
                     attestation['timePeriod'])))
-        
+            if vocabs:
+                g = VocabGrapher(periods, self.request).concept(
+                    periods[attestation['timePeriod']], g)
+
         span = TimeSpanWrapper(context).timeSpan
         if span:
             g.add((
@@ -240,8 +269,7 @@ class PlaceGrapher(object):
                 CITO[mapping.get(citation_type, citation_type)],
                 ref))
 
-            return g
-
+        return g
 
     def place(self, context, vocabs=True):
         """Create a graph centered on a Place and its Feature."""
@@ -258,6 +286,14 @@ class PlaceGrapher(object):
         
         # Type
         g.add((context_subj, RDF.type, PLEIADES['Place']))
+        
+        g.add((context_subj, RDF.type, SKOS['Concept']))
+        g.add((
+            context_subj, 
+            SKOS['inScheme'], 
+            URIRef("http://pleiades.stoa.org/places")))
+        
+        # Triples concerning the real world ancient place.
         g.add((feature_subj, RDF.type, SPATIAL['Feature']))
 
         # primary topic
@@ -278,14 +314,15 @@ class PlaceGrapher(object):
             RDFS['comment'], 
             Literal(context.Description())))
 
-        g = self.dcterms(context, g, context_subj)
+        g = self.dcterms(context, g)
         g = self.provenance(context, g, context_subj)
 
         # Place or feature types
-        vocab = self.vocabs.getVocabularyByName('place-types').getTarget()
+
+        place_types = self.vocabs['place-types']
         pcats = set(filter(None, context.getPlaceType()))
         for pcat in pcats:
-            item = vocab.get(pcat)
+            item = place_types.get(pcat)
             if not item:
                 continue
             if not getattr(item, 'REQUEST', None):
@@ -298,6 +335,10 @@ class PlaceGrapher(object):
                 context_subj,
                 PLEIADES['hasFeatureType'],
                 URIRef(iurl)))
+
+            if vocabs:
+                g = VocabGrapher(place_types, self.request).concept(
+                    place_types[pcat], g)
 
         # Names as skos:label and prefLabel
         folder_path = "/".join(context.getPhysicalPath())
@@ -343,7 +384,9 @@ class PlaceGrapher(object):
             name_subj = URIRef(context_page + "/" + obj.getId())
             g.add((context_subj, PLEIADES['hasName'], name_subj))
             g.add((name_subj, RDF.type, PLEIADES['Name']))
-            g = self.dcterms(obj, g, name_subj)
+            
+            g = self.dcterms(obj, g)
+            
             g = self.temporal(obj, g, name_subj, vocabs=vocabs)
             g = self.provenance(obj, g, name_subj)
             g = self.references(context, g, name_subj)
@@ -454,7 +497,9 @@ class PlaceGrapher(object):
             locn_subj = URIRef(context_page + "/" + obj.getId())
             g.add((context_subj, PLEIADES['hasLocation'], locn_subj))
             g.add((locn_subj, RDF.type, PLEIADES['Location']))
-            g = self.dcterms(obj, g, locn_subj)
+            
+            g = self.dcterms(obj, g)
+
             g = self.temporal(obj, g, locn_subj, vocabs=vocabs)
             g = self.provenance(obj, g, locn_subj)
             g = self.references(context, g, locn_subj)
@@ -513,7 +558,6 @@ class PlaceGrapher(object):
                             Literal(wkt.dumps(shape))))
                 except:
                     log.warn("Couldn't wrap and graph %s", obj)
-                    raise
 
         # connects with
         for f in (
@@ -535,44 +579,51 @@ class PlaceGrapher(object):
 
         return g
 
-    def skos(self, context):
-        g = skos_graph()
 
-        # Place or feature types
-        vocab = self.vocabs.getVocabularyByName('place-types').getTarget()
-        pcats = set(filter(None, context.getPlaceType()))
+class VocabGrapher(PleiadesGrapher):
 
-        for pcat in pcats:
-            item = vocab.get(pcat)
-            if not item:
-                continue
-            if not getattr(item, 'REQUEST', None):
-                item.REQUEST = getattr(context, 'REQUEST')
-            iurl = item.absolute_url()
-            vh_root = item.REQUEST.get('VH_ROOT')
-            if vh_root:
-                iurl = iurl.replace(vh_root, '')
-            label = item.getTermKey()
-            note = item.getTermValue()
-            defn = item.Description()
-            g.add((
-                URIRef(iurl),
-                RDF.type,
-                SKOS['Concept']))
-            g.add((
-                URIRef(iurl),
-                SKOS['prefLabel'],
-                Literal(item.getTermKey(), "en")))
-            g.add((
-                URIRef(iurl),
-                SKOS['scopeNote'],
-                Literal(item.getTermValue(), "en")))
-            if defn:
-                g.add((
-                    URIRef(iurl),
-                    SKOS['definition'],
-                    Literal(defn, "en")))
+    def concept(self, term, g):
+        """Return a set of tuples representing the term"""
         
+        term_ref = URIRef(term.absolute_url())
+        label = term.getTermValue()
+        note = term.Description()
+            
+        g.add((
+            term_ref,
+            RDF.type,
+            SKOS['Concept']))
+        g.add((
+            term_ref,
+            SKOS['prefLabel'],
+            Literal(label, "en")))
+        
+        if note:
+            g.add((
+                term_ref,
+                SKOS['scopeNote'],
+                Literal(note, "en")))
+        
+        vocab = aq_parent(aq_inner(term))
+        g.add((
+            term_ref,
+            SKOS['inScheme'],
+            URIRef(vocab.absolute_url())))
+ 
         return g
 
+    def scheme(self, vocab):
+        g = skos_graph()
+
+        g.add((
+            URIRef(vocab.absolute_url()),
+            RDF.type,
+            SKOS['ConceptScheme']))
+
+        g = self.dcterms(vocab, g)
+
+        for key, term in vocab.items():
+            g = self.concept(term, g)
+
+        return g
 
