@@ -389,7 +389,7 @@ class PlaceGrapher(PleiadesGrapher):
             
             g = self.temporal(obj, g, name_subj, vocabs=vocabs)
             g = self.provenance(obj, g, name_subj)
-            g = self.references(context, g, name_subj)
+            g = self.references(obj, g, name_subj)
 
             nameAttested = obj.getNameAttested()
             if nameAttested:
@@ -502,7 +502,7 @@ class PlaceGrapher(PleiadesGrapher):
 
             g = self.temporal(obj, g, locn_subj, vocabs=vocabs)
             g = self.provenance(obj, g, locn_subj)
-            g = self.references(context, g, locn_subj)
+            g = self.references(obj, g, locn_subj)
 
             ref = obj.getLocation()
             gridbase = "http://atlantides.org/capgrids/"
@@ -560,12 +560,13 @@ class PlaceGrapher(PleiadesGrapher):
                     log.warn("Couldn't wrap and graph %s", obj)
 
         # connects with
-        for f in (
-            context.getConnections() + context.getConnections_from()):
+        for f in (context.getConnections() + 
+                context.getConnections_from()):
             if self.wftool.getInfoFor(f, 'review_state') != 'published':
                 continue
-            feature_obj = URIRef(PLACES + f.getId() + "#this")
-            g.add((context_subj, SPATIAL['C'], feature_obj))
+            feature_obj = URIRef(f.absolute_url() + "#this")
+            g.add((feature_subj, SPATIAL['C'], feature_obj))
+            g.add((context_subj, RDFS['seeAlso'], URIRef(f.absolute_url())))
 
         # dcterms:coverage
         coverage = geoContext(context)
