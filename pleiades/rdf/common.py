@@ -132,12 +132,16 @@ class PleiadesGrapher(object):
         self.wftool = getToolByName(context, 'portal_workflow')
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.vocabs = self.portal['vocabularies']
+        self.portal.REQUEST = self.request.REQUEST
 
     def dcterms(self, context, g):
         """Return a set of tuples covering DC metadata"""
 
-        context_uri = context.absolute_url()
-        subj = URIRef(context_uri)
+        curl = context.absolute_url()
+        vh_root = context.REQUEST.get('VH_ROOT')
+        if vh_root:
+            curl = curl.replace(vh_root, '')
+        subj = URIRef(curl)
 
         # Title, Description, and Modification Date
         g.add((
@@ -215,12 +219,16 @@ class PlaceGrapher(PleiadesGrapher):
     def temporal(self, context, g, subj, vocabs=True):
         
         periods = self.vocabs['time-periods']
+        purl = periods.absolute_url()
+        vh_root = context.REQUEST.get('VH_ROOT')
+        if vh_root:
+            purl = purl.replace(vh_root, '')
 
         for attestation in context.getAttestations():
             g.add((
                 subj, 
                 PLEIADES['during'],
-                URIRef(periods.absolute_url() + "/" + 
+                URIRef(purl + "/" + 
                     attestation['timePeriod'])))
             if vocabs:
                 g = VocabGrapher(periods, self.request).concept(
@@ -564,9 +572,13 @@ class PlaceGrapher(PleiadesGrapher):
                 context.getConnections_from()):
             if self.wftool.getInfoFor(f, 'review_state') != 'published':
                 continue
-            feature_obj = URIRef(f.absolute_url() + "#this")
+            furl = f.absolute_url()
+            vh_root = context.REQUEST.get('VH_ROOT')
+            if vh_root:
+                furl = furl.replace(vh_root, '')
+            feature_obj = URIRef(furl + "#this")
             g.add((feature_subj, SPATIAL['C'], feature_obj))
-            g.add((context_subj, RDFS['seeAlso'], URIRef(f.absolute_url())))
+            g.add((context_subj, RDFS['seeAlso'], URIRef(furl)))
 
         # dcterms:coverage
         coverage = geoContext(context)
@@ -586,7 +598,11 @@ class VocabGrapher(PleiadesGrapher):
     def concept(self, term, g):
         """Return a set of tuples representing the term"""
         
-        term_ref = URIRef(term.absolute_url())
+        turl = term.absolute_url()
+        vh_root = term.REQUEST.get('VH_ROOT')
+        if vh_root:
+            turl = turl.replace(vh_root, '')
+        term_ref = URIRef(turl)
         label = term.getTermValue()
         note = term.Description()
             
@@ -606,18 +622,25 @@ class VocabGrapher(PleiadesGrapher):
                 Literal(note, "en")))
         
         vocab = aq_parent(aq_inner(term))
+        vurl = vocab.absolute_url()
+        vh_root = vocab.REQUEST.get('VH_ROOT')
+        if vh_root:
+            vurl = vurl.replace(vh_root, '')
         g.add((
             term_ref,
             SKOS['inScheme'],
-            URIRef(vocab.absolute_url())))
+            URIRef(vurl)))
  
         return g
 
     def scheme(self, vocab):
         g = skos_graph()
-
+        vurl = vocab.absolute_url()
+        vh_root = vocab.REQUEST.get('VH_ROOT')
+        if vh_root:
+            vurl = vurl.replace(vh_root, '')
         g.add((
-            URIRef(vocab.absolute_url()),
+            URIRef(vurl),
             RDF.type,
             SKOS['ConceptScheme']))
 
@@ -626,5 +649,24 @@ class VocabGrapher(PleiadesGrapher):
         for key, term in vocab.items():
             g = self.concept(term, g)
 
+        return g
+
+
+class PersonsGrapher(PleiadesGrapher):
+
+    def authors(self, context):
+        g = skos_graph()
+        fake_users = ['auser', 'juser']
+        mtool = getToolByName(context, 'portal_membership')
+        users = mtool.listMemberIds()
+        for u in fake_users:
+            if u in users:
+                users.remove(u)
+        for u in users:
+            info = user_info(context, u)
+            if info.get('url') and info.get('fullname'):
+                subj = URIRef(info['url'])
+                g.add((subj, RDF.type, FOAF['Person']))
+                g.add((subj, FOAF['name'], Literal(info.get('fullname'))))
         return g
 

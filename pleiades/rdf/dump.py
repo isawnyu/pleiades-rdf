@@ -10,7 +10,7 @@ from ZPublisher.HTTPResponse import HTTPResponse
 from ZPublisher.BaseRequest import RequestContainer
 
 from pleiades.dump import secure
-from pleiades.rdf.common import PlaceGrapher, VocabGrapher
+from pleiades.rdf.common import PlaceGrapher, PersonsGrapher, VocabGrapher
 
 if __name__ == '__main__':
     from os import environ
@@ -89,6 +89,13 @@ if __name__ == '__main__':
     v = site['vocabularies']['time-periods']
     v.REQUEST = request.REQUEST
     g = VocabGrapher(site, request).scheme(v)
+    sys.stdout.write(g.serialize(format='turtle'))
+    triple_count += len(g)
+
+    sys.stdout.write("\n# Pleiades authors\n")
+
+    site.REQUEST = request.REQUEST
+    g = PersonsGrapher(site, request).authors(site)
     sys.stdout.write(g.serialize(format='turtle'))
     triple_count += len(g)
 
