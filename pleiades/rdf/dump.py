@@ -4,28 +4,30 @@ from optparse import OptionParser
 
 from rdflib.graph import Graph
 
+from AccessControl.SecurityManagement import newSecurityManager
+from AccessControl.SecurityManager import setSecurityPolicy
 from DateTime import DateTime
-from ZPublisher.HTTPRequest import HTTPRequest
-from ZPublisher.HTTPResponse import HTTPResponse
-from ZPublisher.BaseRequest import RequestContainer
+from Products.CMFCore.tests.base.security import PermissiveSecurityPolicy
+from Products.CMFCore.tests.base.security import OmnipotentUser
+from Products.CMFCore.utils import getToolByName
+from Testing.makerequest import makerequest
 
-from pleiades.dump import secure
+from pleiades.dump import secure, getSite
 from pleiades.rdf.common import PlaceGrapher, PersonsGrapher, VocabGrapher
 
 if __name__ == '__main__':
     from os import environ
     from sys import argv, stdin, stdout
 
-    def makerequest(app, stdout=stdout):
-        resp = HTTPResponse(stdout=stdout)
-        if "SERVER_NAME" not in environ:
-            environ['SERVER_NAME']='foo'
-        environ['SERVER_PORT']='80'
-        environ['REQUEST_METHOD'] = 'GET'
-        req = HTTPRequest(stdin, environ, resp)
+    def spoofRequest(app):
+        _policy=PermissiveSecurityPolicy()
+        _oldpolicy=setSecurityPolicy(_policy)
+        newSecurityManager(None, OmnipotentUser().__of__(app.acl_users))
+        this_environ = {'SERVER_PORT': '80', 'REQUEST_METHOD': 'GET'}
+        this_environ["SERVER_NAME"] =  environ.get('SERVER_NAME', 'localhost')
         if 'VH_ROOT' in environ:
-            req.REQUEST['VH_ROOT'] = environ['VH_ROOT']
-        return app.__of__(RequestContainer(REQUEST = req))
+            this_environ['VH_ROOT'] = environ['VH_ROOT']
+        return makerequest(app, environ=this_environ)
 
     parser = OptionParser()
     parser.add_option(
@@ -55,14 +57,12 @@ if __name__ == '__main__':
     if (int(bool(opts.authors)) + int(bool(opts.vocabulary)) + int(bool(opts.places))) > 1:
         raise ValueError("-a, -p, and -v options are exclusive")
 
-    site = app['plone']
-    secure(site, opts.user or 'admin')
-    request = makerequest(site)
-    site.REQUEST = request.REQUEST
+    app = spoofRequest(app)
+    site = getSite(app)
 
     if opts.authors:
 
-        g = PersonsGrapher(site, request).authors(site)
+        g = PersonsGrapher(site, app).authors(site)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Authors
 # Date: %s
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     elif opts.vocabulary:
 
         vocab = site['vocabularies'][opts.vocabulary]
-        g = VocabGrapher(site, request).scheme(vocab)
+        g = VocabGrapher(site, app).scheme(vocab)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Vocabulary '%s'
 # Date: %s
@@ -101,11 +101,10 @@ if __name__ == '__main__':
                 getId=pids,
                 sort_on='getId'):
             obj = b.getObject()
-            obj.REQUEST = request.REQUEST
             if not g:
-                g = PlaceGrapher(site, request).place(obj, vocabs=False)
+                g = PlaceGrapher(site, app).place(obj, vocabs=False)
             else:
-                g += PlaceGrapher(site, request).place(obj, vocabs=False)
+                g += PlaceGrapher(site, app).place(obj, vocabs=False)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Places %s
 # Date: %s
@@ -129,11 +128,10 @@ if __name__ == '__main__':
                 getId={'query': query, 'range': 'min,max'},
                 sort_on='getId'):
             obj = b.getObject()
-            obj.REQUEST = request.REQUEST
             if not g:
-                g = PlaceGrapher(site, request).place(obj, vocabs=False)
+                g = PlaceGrapher(site, app).place(obj, vocabs=False)
             else:
-                g += PlaceGrapher(site, request).place(obj, vocabs=False)
+                g += PlaceGrapher(site, app).place(obj, vocabs=False)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Places Range %s
 # Date: %s

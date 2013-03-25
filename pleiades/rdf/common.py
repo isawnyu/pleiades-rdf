@@ -138,7 +138,7 @@ class PleiadesGrapher(object):
         """Return a set of tuples covering DC metadata"""
 
         curl = context.absolute_url()
-        vh_root = context.REQUEST.get('VH_ROOT')
+        vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             curl = curl.replace(vh_root, '')
         subj = URIRef(curl)
@@ -200,7 +200,7 @@ class PlaceGrapher(PleiadesGrapher):
         g = place_graph()
         
         purl = context.absolute_url()
-        vh_root = context.REQUEST.get('VH_ROOT')
+        vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             purl = purl.replace(vh_root, '')
         context_page = purl
@@ -220,7 +220,7 @@ class PlaceGrapher(PleiadesGrapher):
         
         periods = self.vocabs['time-periods']
         purl = periods.absolute_url()
-        vh_root = context.REQUEST.get('VH_ROOT')
+        vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             purl = purl.replace(vh_root, '')
 
@@ -284,7 +284,7 @@ class PlaceGrapher(PleiadesGrapher):
         g = place_graph()
         
         purl = context.absolute_url()
-        vh_root = context.REQUEST.get('VH_ROOT')
+        vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             purl = purl.replace(vh_root, '')
         
@@ -336,7 +336,7 @@ class PlaceGrapher(PleiadesGrapher):
             if not getattr(item, 'REQUEST', None):
                 item.REQUEST = getattr(context, 'REQUEST')
             iurl = item.absolute_url()
-            vh_root = item.REQUEST.get('VH_ROOT')
+            vh_root = item.REQUEST.environ.get('VH_ROOT')
             if vh_root:
                 iurl = iurl.replace(vh_root, '')
             g.add((
@@ -577,7 +577,7 @@ class PlaceGrapher(PleiadesGrapher):
             if self.wftool.getInfoFor(f, 'review_state') != 'published':
                 continue
             furl = f.absolute_url()
-            vh_root = context.REQUEST.get('VH_ROOT')
+            vh_root = context.REQUEST.environ.get('VH_ROOT')
             if vh_root:
                 furl = furl.replace(vh_root, '')
             feature_obj = URIRef(furl + "#this")
@@ -603,7 +603,7 @@ class VocabGrapher(PleiadesGrapher):
         """Return a set of tuples representing the term"""
         
         turl = term.absolute_url()
-        vh_root = term.REQUEST.get('VH_ROOT')
+        vh_root = term.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             turl = turl.replace(vh_root, '')
         term_ref = URIRef(turl)
@@ -627,7 +627,7 @@ class VocabGrapher(PleiadesGrapher):
         
         vocab = aq_parent(aq_inner(term))
         vurl = vocab.absolute_url()
-        vh_root = vocab.REQUEST.get('VH_ROOT')
+        vh_root = vocab.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             vurl = vurl.replace(vh_root, '')
         g.add((
@@ -640,7 +640,7 @@ class VocabGrapher(PleiadesGrapher):
     def scheme(self, vocab):
         g = place_graph()
         vurl = vocab.absolute_url()
-        vh_root = vocab.REQUEST.get('VH_ROOT')
+        vh_root = vocab.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             vurl = vurl.replace(vh_root, '')
         g.add((
@@ -659,10 +659,14 @@ class VocabGrapher(PleiadesGrapher):
 class PersonsGrapher(PleiadesGrapher):
 
     def authors(self, context):
+        # Note: Authors without Pleiades pages will appear as blank nodes
+        # in the Places RDF files.
+
         g = place_graph()
         fake_users = ['auser', 'juser']
-        mtool = getToolByName(context, 'portal_membership')
-        users = mtool.listMemberIds()
+        contributors = set(self.catalog.uniqueValuesFor('Contributors'))
+        creators = set(self.catalog.uniqueValuesFor('Creator'))
+        users = contributors.union(creators)
         for u in fake_users:
             if u in users:
                 users.remove(u)
@@ -672,5 +676,6 @@ class PersonsGrapher(PleiadesGrapher):
                 subj = URIRef(info['url'])
                 g.add((subj, RDF.type, FOAF['Person']))
                 g.add((subj, FOAF['name'], Literal(info.get('fullname'))))
+        
         return g
 
