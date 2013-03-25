@@ -269,7 +269,9 @@ class PlaceGrapher(PleiadesGrapher):
                 ref =  URIRef(c.get('identifier').strip())
             else:
                 ref = BNode()
-            if citation_range:
+            if citation_range.startswith('BAtlas'):
+                g.add((ref, RDFS['label'], Literal('Barrington Atlas of the Greek and Roman World')))
+            else:
                 g.add((ref, RDFS['label'], Literal(citation_range)))
             g.add((subj, RDFS['seeAlso'], ref))
             g.add((

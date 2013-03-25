@@ -47,6 +47,10 @@ if __name__ == '__main__':
         default=False,
         help="Dump a place or multiple places")
     parser.add_option(
+        "-e", "--errata", dest="errata",
+        default=False,
+        help="Dump a erroneous place or multiple erroneous places")
+    parser.add_option(
         "-r", "--range", dest="range",
         default=False,
         action='store_true',
@@ -96,6 +100,72 @@ if __name__ == '__main__':
         catalog = site['portal_catalog']
         for b in catalog.searchResults(
                 path={'query': "/plone/places"},
+                portal_type=['Place', 'Link'],
+                review_state='published',
+                getId=pids,
+                sort_on='getId'):
+            obj = b.getObject()
+            if not g:
+                if b.portal_type == 'Place':
+                    g = PlaceGrapher(site, app).place(obj, vocabs=False)
+                elif b.portal_type == 'Link':
+                    g = PlaceGrapher(site, app).link(obj)
+            else:
+                if b.portal_type == 'Place':
+                    g += PlaceGrapher(site, app).place(obj, vocabs=False)
+                elif b.portal_type == 'Link':
+                    g += PlaceGrapher(site, app).link(obj)
+        sys.stdout.write("""# Pleiades RDF Dump
+# Contents: Pleiades Places %s
+# Date: %s
+# License: http://creativecommons.org/licenses/by/3.0/us/
+# Credits: http://pleiades.stoa.org/credits
+# Triple count: %d
+
+""" % (opts.places, DateTime(), len(g)))
+        sys.stdout.write(g.serialize(format='turtle'))
+        sys.exit(1)
+
+    elif opts.places and opts.range:
+
+        g = None
+        query = [s.strip() for s in opts.places.split(",")]
+        catalog = site['portal_catalog']
+        for b in catalog.searchResults(
+                path={'query': "/plone/places"},
+                portal_type=['Place', 'Link'],
+                review_state='published',
+                getId={'query': query, 'range': 'min,max'},
+                sort_on='getId'):
+            obj = b.getObject()
+            if not g:
+                if b.portal_type == 'Place':
+                    g = PlaceGrapher(site, app).place(obj, vocabs=False)
+                elif b.portal_type == 'Link':
+                    g = PlaceGrapher(site, app).link(obj)
+            else:
+                if b.portal_type == 'Place':
+                    g += PlaceGrapher(site, app).place(obj, vocabs=False)
+                elif b.portal_type == 'Link':
+                    g += PlaceGrapher(site, app).link(obj)
+        sys.stdout.write("""# Pleiades RDF Dump
+# Contents: Pleiades Places Range %s
+# Date: %s
+# License: http://creativecommons.org/licenses/by/3.0/us/
+# Credits: http://pleiades.stoa.org/credits
+# Triple count: %d
+
+""" % (opts.places, DateTime(), len(g)))
+        sys.stdout.write(g.serialize(format='turtle'))
+        sys.exit(1)
+
+    elif opts.errata and not opts.range:
+
+        g = None
+        pids = [s.strip() for s in opts.places.split(",")]
+        catalog = site['portal_catalog']
+        for b in catalog.searchResults(
+                path={'query': "/plone/errata"},
                 portal_type='Place',
                 review_state='published',
                 getId=pids,
@@ -116,13 +186,13 @@ if __name__ == '__main__':
         sys.stdout.write(g.serialize(format='turtle'))
         sys.exit(1)
 
-    elif opts.places and opts.range:
+    elif opts.errata and opts.range:
 
         g = None
         query = [s.strip() for s in opts.places.split(",")]
         catalog = site['portal_catalog']
         for b in catalog.searchResults(
-                path={'query': "/plone/places"},
+                path={'query': "/plone/errata"},
                 portal_type='Place',
                 review_state='published',
                 getId={'query': query, 'range': 'min,max'},
@@ -133,7 +203,7 @@ if __name__ == '__main__':
             else:
                 g += PlaceGrapher(site, app).place(obj, vocabs=False)
         sys.stdout.write("""# Pleiades RDF Dump
-# Contents: Pleiades Places Range %s
+# Contents: Pleiades Errata Range %s
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
 # Credits: http://pleiades.stoa.org/credits
