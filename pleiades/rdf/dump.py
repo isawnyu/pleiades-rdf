@@ -162,7 +162,7 @@ if __name__ == '__main__':
     elif opts.errata and not opts.range:
 
         g = None
-        pids = [s.strip() for s in opts.places.split(",")]
+        pids = [s.strip() for s in opts.errata.split(",")]
         catalog = site['portal_catalog']
         for b in catalog.searchResults(
                 path={'query': "/plone/errata"},
@@ -176,7 +176,7 @@ if __name__ == '__main__':
             else:
                 g += PlaceGrapher(site, app).place(obj, vocabs=False)
         sys.stdout.write("""# Pleiades RDF Dump
-# Contents: Pleiades Places %s
+# Contents: Pleiades Errata %s
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
 # Credits: http://pleiades.stoa.org/credits
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     elif opts.errata and opts.range:
 
         g = None
-        query = [s.strip() for s in opts.places.split(",")]
+        query = [s.strip() for s in opts.errata.split(",")]
         catalog = site['portal_catalog']
         for b in catalog.searchResults(
                 path={'query': "/plone/errata"},
