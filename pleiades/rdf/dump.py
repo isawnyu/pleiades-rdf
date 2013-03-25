@@ -31,73 +31,120 @@ if __name__ == '__main__':
     parser.add_option(
         "-u", "--user", dest="user",
         help="Run script as user")
+    parser.add_option(
+        "-a", "--authors", dest="authors",
+        default=False,
+        action="store_true",
+        help="Dump authors")
+    parser.add_option(
+        "-v", "--vocabulary", dest="vocabulary",
+        default=None,
+        help="Dump a named vocabulary")
+    parser.add_option(
+        "-p", "--places", dest="places",
+        default=False,
+        help="Dump a place or multiple places")
+    parser.add_option(
+        "-r", "--range", dest="range",
+        default=False,
+        action='store_true',
+        help='Interpret places as a range. Example: "-p=1,3 -r" dumps all places starting with "1" and up to but not including "3" or higher')
+
     opts, args = parser.parse_args(argv[1:])
+
+    if (int(bool(opts.authors)) + int(bool(opts.vocabulary)) + int(bool(opts.places))) > 1:
+        raise ValueError("-a, -p, and -v options are exclusive")
 
     site = app['plone']
     secure(site, opts.user or 'admin')
     request = makerequest(site)
-    place_grapher = PlaceGrapher(site, request)
+    site.REQUEST = request.REQUEST
 
-    sys.stdout.write("""# Pleiades Places RDF Dump
+    if opts.authors:
+
+        g = PersonsGrapher(site, request).authors(site)
+        sys.stdout.write("""# Pleiades RDF Dump
+# Contents: Pleiades Authors
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
 # Credits: http://pleiades.stoa.org/credits
-""" % DateTime())
+# Triple count: %d
 
-    triple_count = 0
-    
-    catalog = site['portal_catalog']
-
-    sys.stdout.write("\n# Places\n")
-
-    for b in catalog.searchResults(
-            path={'query': "/plone/places"},
-            portal_type='Place',
-            review_state='published',
-            sort_on='getId'):
-        obj = b.getObject()
-        obj.REQUEST = request.REQUEST
-        g = place_grapher.place(obj, vocabs=False)
-        #if not g:
-        #    import pdb; pdb.set_trace()
+""" % (DateTime(), len(g)))
         sys.stdout.write(g.serialize(format='turtle'))
-        triple_count += len(g)
+        sys.exit(1)
 
-    sys.stdout.write("\n# Errata\n")
-    
-    for b in catalog.searchResults(
-            path={'query': "/plone/places"},
-            portal_type='Link',
-            review_state='published',
-            sort_on='getId'):
-        obj = b.getObject()
-        obj.REQUEST = request.REQUEST
-        g = place_grapher.place(obj, vocabs=False)
+    elif opts.vocabulary:
+
+        vocab = site['vocabularies'][opts.vocabulary]
+        g = VocabGrapher(site, request).scheme(vocab)
+        sys.stdout.write("""# Pleiades RDF Dump
+# Contents: Pleiades Vocabulary '%s'
+# Date: %s
+# License: http://creativecommons.org/licenses/by/3.0/us/
+# Credits: http://pleiades.stoa.org/credits
+# Triple count: %d
+
+""" % (opts.vocabulary, DateTime(), len(g)))
         sys.stdout.write(g.serialize(format='turtle'))
-        triple_count += len(g)
+        sys.exit(1)
 
-    sys.stdout.write("\n# Place and feature types\n")
+    elif opts.places and not opts.range:
 
-    v = site['vocabularies']['place-types']
-    v.REQUEST = request.REQUEST
-    g = VocabGrapher(site, request).scheme(v)
-    sys.stdout.write(g.serialize(format='turtle'))
-    triple_count += len(g)
+        g = None
+        pids = [s.strip() for s in opts.places.split(",")]
+        catalog = site['portal_catalog']
+        for b in catalog.searchResults(
+                path={'query': "/plone/places"},
+                portal_type='Place',
+                review_state='published',
+                getId=pids,
+                sort_on='getId'):
+            obj = b.getObject()
+            obj.REQUEST = request.REQUEST
+            if not g:
+                g = PlaceGrapher(site, request).place(obj, vocabs=False)
+            else:
+                g += PlaceGrapher(site, request).place(obj, vocabs=False)
+        sys.stdout.write("""# Pleiades RDF Dump
+# Contents: Pleiades Places %s
+# Date: %s
+# License: http://creativecommons.org/licenses/by/3.0/us/
+# Credits: http://pleiades.stoa.org/credits
+# Triple count: %d
 
-    sys.stdout.write("\n# Time periods\n")
+""" % (opts.places, DateTime(), len(g)))
+        sys.stdout.write(g.serialize(format='turtle'))
+        sys.exit(1)
 
-    v = site['vocabularies']['time-periods']
-    v.REQUEST = request.REQUEST
-    g = VocabGrapher(site, request).scheme(v)
-    sys.stdout.write(g.serialize(format='turtle'))
-    triple_count += len(g)
+    elif opts.places and opts.range:
 
-    sys.stdout.write("\n# Pleiades authors\n")
+        g = None
+        query = [s.strip() for s in opts.places.split(",")]
+        catalog = site['portal_catalog']
+        for b in catalog.searchResults(
+                path={'query': "/plone/places"},
+                portal_type='Place',
+                review_state='published',
+                getId={'query': query, 'range': 'min,max'},
+                sort_on='getId'):
+            obj = b.getObject()
+            obj.REQUEST = request.REQUEST
+            if not g:
+                g = PlaceGrapher(site, request).place(obj, vocabs=False)
+            else:
+                g += PlaceGrapher(site, request).place(obj, vocabs=False)
+        sys.stdout.write("""# Pleiades RDF Dump
+# Contents: Pleiades Places Range %s
+# Date: %s
+# License: http://creativecommons.org/licenses/by/3.0/us/
+# Credits: http://pleiades.stoa.org/credits
+# Triple count: %d
 
-    site.REQUEST = request.REQUEST
-    g = PersonsGrapher(site, request).authors(site)
-    sys.stdout.write(g.serialize(format='turtle'))
-    triple_count += len(g)
+""" % (opts.places, DateTime(), len(g)))
+        sys.stdout.write(g.serialize(format='turtle'))
+        sys.exit(1)
 
-    sys.stdout.write("\n# Triple count: %d\n" % triple_count)
+    else:
+        raise ValueError("No dump options provided")
 

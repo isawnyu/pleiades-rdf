@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.11 (2013-03-25)
+-----------------
+- Change dump script to do specific author, vocab, or place dumps with control
+  over the range of places.
+
 0.10 (2013-03-22)
 -----------------
 - Document ontologies and vocabularies used in the README.

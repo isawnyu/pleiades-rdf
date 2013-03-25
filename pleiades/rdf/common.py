@@ -514,21 +514,25 @@ class PlaceGrapher(PleiadesGrapher):
 
             ref = obj.getLocation()
             gridbase = "http://atlantides.org/capgrids/"
+
             if ref and ref.startswith(gridbase):
-                params = ref.rstrip("/")[len(gridbase):].split("/")
-                if len(params) == 1:
-                    mapnum = params[0]
-                    grids = [None]
-                elif len(params) == 2:
-                    mapnum = params[0]
-                    grids = [v.upper() for v in params[1].split("+")]
-                else:
-                    log.error("Invalid location identifier %s" % ref)
-                    continue
-                for grid in grids:
-                    grid_uri = gridbase + mapnum + "#" + (grid or "this")
-                    bounds = capgrids.box(mapnum, grid)
-                    shape = box(*bounds)
+                try:
+                    params = ref.rstrip("/")[len(gridbase):].split("/")
+                    if len(params) == 1:
+                        mapnum = params[0]
+                        grids = [None]
+                    elif len(params) == 2:
+                        mapnum = params[0]
+                        grids = [v.upper() for v in params[1].split("+")]
+                    else:
+                        log.error("Invalid location identifier %s" % ref)
+                        continue
+                    for grid in grids:
+                        grid_uri = gridbase + mapnum + "#" + (grid or "this")
+                        bounds = capgrids.box(mapnum, grid)
+                        shape = box(*bounds)
+                except:
+                    log.exception("Exception caught computing grid extent for %r", obj)
 
                     g.add((
                         locn_subj,
@@ -565,7 +569,7 @@ class PlaceGrapher(PleiadesGrapher):
                             OSGEO['asWKT'],
                             Literal(wkt.dumps(shape))))
                 except:
-                    log.warn("Couldn't wrap and graph %s", obj)
+                    log.warn("Couldn't wrap and graph %r", obj)
 
         # connects with
         for f in (context.getConnections() + 
@@ -634,7 +638,7 @@ class VocabGrapher(PleiadesGrapher):
         return g
 
     def scheme(self, vocab):
-        g = skos_graph()
+        g = place_graph()
         vurl = vocab.absolute_url()
         vh_root = vocab.REQUEST.get('VH_ROOT')
         if vh_root:
@@ -655,7 +659,7 @@ class VocabGrapher(PleiadesGrapher):
 class PersonsGrapher(PleiadesGrapher):
 
     def authors(self, context):
-        g = skos_graph()
+        g = place_graph()
         fake_users = ['auser', 'juser']
         mtool = getToolByName(context, 'portal_membership')
         users = mtool.listMemberIds()
