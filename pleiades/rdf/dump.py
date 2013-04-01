@@ -1,8 +1,7 @@
 # Run as a script, this dumps all published places to N3 RDF
 
+import logging
 from optparse import OptionParser
-
-from rdflib.graph import Graph
 
 from AccessControl.SecurityManagement import newSecurityManager
 from AccessControl.SecurityManager import setSecurityPolicy
@@ -14,10 +13,13 @@ from Testing.makerequest import makerequest
 
 from pleiades.dump import secure, getSite
 from pleiades.rdf.common import PlaceGrapher, PersonsGrapher, VocabGrapher
+from pleiades.rdf.common import place_graph
 
 if __name__ == '__main__':
     from os import environ
     from sys import argv, stdin, stdout
+
+    log = logging.getLogger('pleiades.rdf')
 
     def spoofRequest(app):
         _policy=PermissiveSecurityPolicy()
@@ -95,7 +97,7 @@ if __name__ == '__main__':
 
     elif opts.places and not opts.range:
 
-        g = None
+        g = place_graph()
         pids = [s.strip() for s in opts.places.split(",")]
         catalog = site['portal_catalog']
         for b in catalog.searchResults(
@@ -105,16 +107,13 @@ if __name__ == '__main__':
                 getId=pids,
                 sort_on='getId'):
             obj = b.getObject()
-            if not g:
-                if b.portal_type == 'Place':
-                    g = PlaceGrapher(site, app).place(obj, vocabs=False)
-                elif b.portal_type == 'Link':
-                    g = PlaceGrapher(site, app).link(obj)
-            else:
+            try:
                 if b.portal_type == 'Place':
                     g += PlaceGrapher(site, app).place(obj, vocabs=False)
                 elif b.portal_type == 'Link':
                     g += PlaceGrapher(site, app).link(obj)
+            except Exception, e:
+                log.exception("Failed to add object graph of %r to dump batch: %s", obj, e)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Places %s
 # Date: %s
@@ -128,7 +127,7 @@ if __name__ == '__main__':
 
     elif opts.places and opts.range:
 
-        g = None
+        g = place_graph()
         query = [s.strip() for s in opts.places.split(",")]
         catalog = site['portal_catalog']
         for b in catalog.searchResults(
@@ -138,16 +137,13 @@ if __name__ == '__main__':
                 getId={'query': query, 'range': 'min,max'},
                 sort_on='getId'):
             obj = b.getObject()
-            if not g:
-                if b.portal_type == 'Place':
-                    g = PlaceGrapher(site, app).place(obj, vocabs=False)
-                elif b.portal_type == 'Link':
-                    g = PlaceGrapher(site, app).link(obj)
-            else:
+            try:
                 if b.portal_type == 'Place':
                     g += PlaceGrapher(site, app).place(obj, vocabs=False)
                 elif b.portal_type == 'Link':
                     g += PlaceGrapher(site, app).link(obj)
+            except Exception, e:
+                log.exception("Failed to add object graph of %r to dump batch: %s", obj, e)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Places Range %s
 # Date: %s
@@ -159,9 +155,10 @@ if __name__ == '__main__':
         sys.stdout.write(g.serialize(format='turtle'))
         sys.exit(1)
 
+    # Places in /errata
     elif opts.errata and not opts.range:
 
-        g = None
+        g = place_graph()
         pids = [s.strip() for s in opts.errata.split(",")]
         catalog = site['portal_catalog']
         for b in catalog.searchResults(
@@ -171,10 +168,10 @@ if __name__ == '__main__':
                 getId=pids,
                 sort_on='getId'):
             obj = b.getObject()
-            if not g:
-                g = PlaceGrapher(site, app).place(obj, vocabs=False)
-            else:
+            try:
                 g += PlaceGrapher(site, app).place(obj, vocabs=False)
+            except Exception, e:
+                log.exception("Failed to add object graph of %r to dump batch: %s", obj, e)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Errata %s
 # Date: %s
@@ -186,9 +183,10 @@ if __name__ == '__main__':
         sys.stdout.write(g.serialize(format='turtle'))
         sys.exit(1)
 
+    # Places in /errata
     elif opts.errata and opts.range:
 
-        g = None
+        g = place_graph()
         query = [s.strip() for s in opts.errata.split(",")]
         catalog = site['portal_catalog']
         for b in catalog.searchResults(
@@ -198,10 +196,10 @@ if __name__ == '__main__':
                 getId={'query': query, 'range': 'min,max'},
                 sort_on='getId'):
             obj = b.getObject()
-            if not g:
-                g = PlaceGrapher(site, app).place(obj, vocabs=False)
-            else:
+            try:
                 g += PlaceGrapher(site, app).place(obj, vocabs=False)
+            except Exception, e:
+                log.exception("Failed to add object graph of %r to dump batch: %s", obj, e)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Errata Range %s
 # Date: %s

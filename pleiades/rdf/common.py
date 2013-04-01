@@ -57,7 +57,7 @@ PLEIADES = Namespace(PLEIADES_URI)
 PROVO_URI = "http://www.w3.org/TR/prov-o/#"
 PROV = Namespace(PROVO_URI)
 
-log = logging.getLogger('pleiades.dump')
+log = logging.getLogger('pleiades.rdf')
 
 def geoContext(place):
     note = place.getModernLocation() or ""
@@ -532,8 +532,6 @@ class PlaceGrapher(PleiadesGrapher):
                         grid_uri = gridbase + mapnum + "#" + (grid or "this")
                         bounds = capgrids.box(mapnum, grid)
                         shape = box(*bounds)
-                except:
-                    log.exception("Exception caught computing grid extent for %r", obj)
 
                     g.add((
                         locn_subj,
@@ -554,7 +552,10 @@ class PlaceGrapher(PleiadesGrapher):
                         e,
                         OSGEO['asWKT'],
                         Literal(wkt.dumps(shape))))
-            
+
+                except:
+                    log.exception("Exception caught computing grid extent for %r", obj)
+
             else:
                 try:
                     f = wrap(obj, 0)
@@ -570,7 +571,7 @@ class PlaceGrapher(PleiadesGrapher):
                             OSGEO['asWKT'],
                             Literal(wkt.dumps(shape))))
                 except:
-                    log.warn("Couldn't wrap and graph %r", obj)
+                    log.exception("Couldn't wrap and graph %r", obj)
 
         # connects with
         for f in (context.getConnections() + 
