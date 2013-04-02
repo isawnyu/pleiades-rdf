@@ -5,7 +5,52 @@ Pleiades RDF
 This is the pleiades.rdf package. It provides RDF views of individual Pleiades
 places (such as http://pleiades.stoa.org/places/1043/turtle) and the
 comprehensive RDF dataset dumps at
-http://atlantides.org/downloads/pleiades/rdf/ and CKAN's Data Hub.
+http://atlantides.org/downloads/pleiades/rdf/.
+
+RDF Views of Places
+===================
+
+The RDF views of Places (such as http://pleiades.stoa.org/places/1043/turtle
+for Turtle or http://pleiades.stoa.org/places/1043/rdf for RDF/XML) contain
+triples with the following classes of subjects:
+
+* Ancient World Places (real past world entities)
+* Authors (real world people)
+* Pleiades Places, Names, Locations (web resources)
+* Pleiades vocabulary items (web resources)
+
+Generally, every thing in the graph has at least a label, but detailed data is
+provided only for the Place at the center of the graph and its Locations and
+Names. The vocabularies used to express the detailed data are enumerated below.
+
+RDF Dataset Dumps
+=================
+
+The pleiades-latest.tar.gz archive contains 9 files of RDF for Places
+(places-[1-9].ttl), one file of RDF about erroneous Places (errata.ttl), a file
+describing Pleiades authors (authors.ttl), and two vocabularies
+(place-types.ttl and time-periods.ttl).
+
+.. sourcecode:: console
+
+  # tar tzf pleiades-latest.tar.gz 
+  authors.ttl
+  errata.ttl
+  place-types.ttl
+  places-1.ttl
+  places-2.ttl
+  places-3.ttl
+  places-4.ttl
+  places-5.ttl
+  places-6.ttl
+  places-7.ttl
+  places-8.ttl
+  places-9.ttl
+  time-periods.ttl
+
+These archives are created weekly. The difference between these files and the
+single Place graphs is that authors and vocabularies are represented separately
+and not duplicated within the batches of Places.
 
 Vocabularies
 ============

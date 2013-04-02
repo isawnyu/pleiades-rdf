@@ -132,7 +132,6 @@ class PleiadesGrapher(object):
         self.wftool = getToolByName(context, 'portal_workflow')
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.vocabs = self.portal['vocabularies']
-        self.portal.REQUEST = self.request.REQUEST
 
     def dcterms(self, context, g):
         """Return a set of tuples covering DC metadata"""
@@ -334,8 +333,6 @@ class PlaceGrapher(PleiadesGrapher):
             item = place_types.get(pcat)
             if not item:
                 continue
-            if not getattr(item, 'REQUEST', None):
-                item.REQUEST = getattr(context, 'REQUEST')
             iurl = item.absolute_url()
             vh_root = item.REQUEST.environ.get('VH_ROOT')
             if vh_root:
