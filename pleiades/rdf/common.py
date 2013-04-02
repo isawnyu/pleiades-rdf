@@ -510,45 +510,49 @@ class PlaceGrapher(PleiadesGrapher):
             g = self.provenance(obj, g, locn_subj)
             g = self.references(obj, g, locn_subj)
 
-            ref = obj.getLocation()
+            dc_locn = obj.getLocation()
             gridbase = "http://atlantides.org/capgrids/"
 
-            if ref and ref.startswith(gridbase):
+            if dc_locn and dc_locn.startswith(gridbase):
                 try:
-                    params = ref.rstrip("/")[len(gridbase):].split("/")
+                    params = dc_locn.rstrip("/")[len(gridbase):].split("/")
                     if len(params) == 1:
                         mapnum = params[0]
                         grids = [None]
                     elif len(params) == 2:
                         mapnum = params[0]
                         grids = [v.upper() for v in params[1].split("+")]
+                    elif len(params) >= 3:
+                        mapnum = params[0]
+                        grids = [v.upper() for v in params[1:]]
                     else:
                         log.error("Invalid location identifier %s" % ref)
                         continue
+
                     for grid in grids:
                         grid_uri = gridbase + mapnum + "#" + (grid or "this")
                         bounds = capgrids.box(mapnum, grid)
                         shape = box(*bounds)
 
-                    g.add((
-                        locn_subj,
-                        OSSPATIAL['within'],
-                        URIRef(grid_uri)))
+                        g.add((
+                            locn_subj,
+                            OSSPATIAL['partiallyOverlaps'],
+                            URIRef(grid_uri)))
 
-                    e = URIRef(grid_uri + "-extent") # the grid's extent
-                    g.add((e, RDF.type, OSGEO['AbstractGeometry']))
-                    g.add((
-                        URIRef(grid_uri),
-                        OSGEO['extent'],
-                        e))
-                    g.add((
-                        e,
-                        OSGEO['asGeoJSON'],
-                        Literal(geojson.dumps(shape))))
-                    g.add((
-                        e,
-                        OSGEO['asWKT'],
-                        Literal(wkt.dumps(shape))))
+                        e = URIRef(grid_uri + "-extent") # the grid's extent
+                        g.add((e, RDF.type, OSGEO['AbstractGeometry']))
+                        g.add((
+                            URIRef(grid_uri),
+                            OSGEO['extent'],
+                            e))
+                        g.add((
+                            e,
+                            OSGEO['asGeoJSON'],
+                            Literal(geojson.dumps(shape))))
+                        g.add((
+                            e,
+                            OSGEO['asWKT'],
+                            Literal(wkt.dumps(shape))))
 
                 except:
                     log.exception("Exception caught computing grid extent for %r", obj)
