@@ -15,9 +15,10 @@ for Turtle or http://pleiades.stoa.org/places/1043/rdf for RDF/XML) contain
 triples with the following classes of subjects:
 
 * Ancient World Places (real past world entities)
-* Authors (real world people)
-* Pleiades Places, Names, Locations (web resources)
-* Pleiades vocabulary items (web resources)
+* Authors – ``foaf:Person``
+* Pleiades Places, Names, Locations – ``pleiades:Place``, ``pleiades:Name``,
+  ``pleiades:Location``
+* Pleiades vocabulary items – ``skos:Concept``
 
 Generally, every thing in the graph has at least a label, but detailed data is
 provided only for the Place at the center of the graph and its Locations and
