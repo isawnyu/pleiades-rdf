@@ -1,7 +1,12 @@
 Changelog
 =========
 
-0.11 (2013-03-25)
+0.11.1 (2013-04-02)
+-------------------
+- Serialize all BAtlas grid triples, not just the last.
+- Don't mess with REQUEST in views, only in dump script.
+
+0.11 (2013-04-01)
 -----------------
 - Change dump script to do specific author, vocab, or place dumps with control
   over the range of places.
