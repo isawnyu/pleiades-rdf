@@ -34,20 +34,20 @@ describing Pleiades authors (authors.ttl), and two vocabularies
 
 .. sourcecode:: console
 
-  # tar tzf pleiades-latest.tar.gz 
-  authors.ttl
-  errata.ttl
-  place-types.ttl
-  places-1.ttl
-  places-2.ttl
-  places-3.ttl
-  places-4.ttl
-  places-5.ttl
-  places-6.ttl
-  places-7.ttl
-  places-8.ttl
-  places-9.ttl
-  time-periods.ttl
+  $ tar tzvf pleiades-latest.tar.gz 
+  -rw-r--r-- zope/zope     14291 2013-04-02 18:11:12 authors.ttl
+  -rw-r--r-- zope/zope    262883 2013-04-02 18:14:34 errata.ttl
+  -rw-r--r-- zope/zope     17048 2013-04-02 18:12:00 place-types.ttl
+  -rw-r--r-- zope/zope  14708537 2013-04-02 18:52:35 places-1.ttl
+  -rw-r--r-- zope/zope  22835185 2013-04-02 20:28:42 places-2.ttl
+  -rw-r--r-- zope/zope  10463935 2013-04-02 21:21:32 places-3.ttl
+  -rw-r--r-- zope/zope  15205181 2013-04-02 22:32:57 places-4.ttl
+  -rw-r--r-- zope/zope  21944876 2013-04-03 00:36:33 places-5.ttl
+  -rw-r--r-- zope/zope  14548858 2013-04-03 02:00:07 places-6.ttl
+  -rw-r--r-- zope/zope   9114611 2013-04-03 03:07:33 places-7.ttl
+  -rw-r--r-- zope/zope  11176998 2013-04-03 04:12:06 places-8.ttl
+  -rw-r--r-- zope/zope   6685326 2013-04-03 04:28:29 places-9.ttl
+  -rw-r--r-- zope/zope     50855 2013-04-02 18:11:36 time-periods.ttl
 
 These archives are created weekly. The difference between these files and the
 single Place graphs is that authors and vocabularies are represented separately
@@ -97,8 +97,8 @@ Ordnance Survey Ontology
 `<http://data.ordnancesurvey.co.uk/ontology/spatialrelations/>`__
 
 The extents of spatial objects are expressed using ``osgeo:AbstractGeometry``,
-``osgeo:AsGeoJSON``, and ``osgeo:AsWKT``. Spatial containment is expressed
-using ``osspatial:within``.
+``osgeo:AsGeoJSON``, and ``osgeo:AsWKT``. Spatial overlap is expressed using
+``osspatial:partiallyOverlaps``.
 
 OWL
 ---
