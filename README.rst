@@ -165,3 +165,8 @@ W3C Provenance
 The sources of all Pleiades content are identified using
 ``prov:wasDerivedFrom``.
 
+Classical Atlas Project Authors and Contributors
+================================================
+
+See the file `pleiades/rdf/cap-authors.csv <pleiades/rdf/cap-authors.csv>`__.
+
