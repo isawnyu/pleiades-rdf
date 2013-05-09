@@ -1,6 +1,7 @@
 # Common classes and functions
 
 import csv
+import os
 import re
 from urlparse import urlparse
 
