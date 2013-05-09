@@ -1,5 +1,6 @@
 # Common classes and functions
 
+import csv
 import re
 from urlparse import urlparse
 
@@ -132,6 +133,14 @@ class PleiadesGrapher(object):
         self.wftool = getToolByName(context, 'portal_workflow')
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.vocabs = self.portal['vocabularies']
+        
+        f = open(os.path.join(os.path.dirname(__file__), 'cap-authors.csv'))
+        reader = csv.reader(f)
+        data = {}
+        for key, val in list(reader)[1:]:
+            data[key] = val
+        self.cap_authors = data
+        f.close()
 
     def dcterms(self, context, g):
         """Return a set of tuples covering DC metadata"""
@@ -168,11 +177,11 @@ class PleiadesGrapher(object):
 
         for principal in creators:
             p = user_info(context, principal)
-            url = p.get('url')
+            url = p.get('url') or self.cap_authors.get(principal)
             if url:
                 pnode = URIRef(url)
             else:
-                pnode = BNode()
+                pnod = BNode()
             g.add((subj, DCTERMS['creator'], pnode))
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
@@ -180,7 +189,7 @@ class PleiadesGrapher(object):
 
         for principal in contributors:
             p = user_info(context, principal)
-            url = p.get('url')
+            url = p.get('url') or self.cap_authors.get(principal)
             if url:
                 pnode = URIRef(url)
             else:
