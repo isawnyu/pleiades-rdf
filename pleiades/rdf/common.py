@@ -682,6 +682,8 @@ class PersonsGrapher(PleiadesGrapher):
         for u in fake_users:
             if u in users:
                 users.remove(u)
+        
+        # First, the Pleiades site contributors.
         for u in users:
             info = user_info(context, u)
             if info.get('url') and info.get('fullname'):
@@ -689,5 +691,11 @@ class PersonsGrapher(PleiadesGrapher):
                 g.add((subj, RDF.type, FOAF['Person']))
                 g.add((subj, FOAF['name'], Literal(info.get('fullname'))))
         
+        # Next, the Classical Atlas Project contributors.
+        for label, uri in self.cap_authors.items():
+            subj = URIRef(uri)
+            g.add((subj, RDF.type, FOAF['Person']))
+            g.add((subj, FOAF['name'], Literal(label)))
+
         return g
 

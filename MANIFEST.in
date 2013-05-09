@@ -1,1 +1,1 @@
-global-include *.rst *.txt *.zcml *.GPL *.css *.gif *.pt *.xml *.kml *.js
+global-include *.rst *.txt *.zcml *.GPL *.css *.gif *.pt *.xml *.kml *.js *.csv
