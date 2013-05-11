@@ -4,6 +4,8 @@ Changelog
 0.12 (2013-05-09)
 -----------------
 - Add table of URIs for Classical Atlas Project authors and contributors.
+- Make sure multi-party contributors entries are split up properly.
+- Provide a URL for DARMC.
 
 0.11.1 (2013-04-02)
 -------------------

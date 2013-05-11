@@ -118,12 +118,20 @@ def user_info(context, username):
 
 def principals(context):
     creators = list(context.Creators())
+    creators = [p.strip() for r in creators for p in r.split(',')]
     contributors = list(context.Contributors())
+    contributors = [p.strip() for r in contributors for p in r.split(',')]
     if ("sgillies" in creators and 
             ("sgillies" in contributors or "S. Gillies" in contributors)):
         creators.remove("sgillies")
     return creators, contributors
 
+cap_authors = {}
+f = open(os.path.join(os.path.dirname(__file__), 'cap-authors.csv'))
+reader = csv.reader(f)
+for key, val in list(reader)[1:]:
+    cap_authors[key] = val
+f.close()
 
 class PleiadesGrapher(object):
 
@@ -134,14 +142,7 @@ class PleiadesGrapher(object):
         self.wftool = getToolByName(context, 'portal_workflow')
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.vocabs = self.portal['vocabularies']
-        
-        f = open(os.path.join(os.path.dirname(__file__), 'cap-authors.csv'))
-        reader = csv.reader(f)
-        data = {}
-        for key, val in list(reader)[1:]:
-            data[key] = val
-        self.cap_authors = data
-        f.close()
+        self.cap_authors = cap_authors
 
     def dcterms(self, context, g):
         """Return a set of tuples covering DC metadata"""
@@ -182,7 +183,7 @@ class PleiadesGrapher(object):
             if url:
                 pnode = URIRef(url)
             else:
-                pnod = BNode()
+                pnode = BNode()
             g.add((subj, DCTERMS['creator'], pnode))
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
@@ -193,6 +194,8 @@ class PleiadesGrapher(object):
             url = p.get('url') or self.cap_authors.get(principal)
             if url:
                 pnode = URIRef(url)
+            elif p.get('fullname') == 'DARMC':
+                pnode = URIRef("http://darmc.harvard.edu")
             else:
                 pnode = BNode()
             g.add((subj, DCTERMS['contributor'], pnode))
