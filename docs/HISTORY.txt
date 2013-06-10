@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.13 (2013-06-10)
+-----------------
+- Change table of CAP authors to a general authority file, listing VIAF
+  identifiers for any Pleiades author.
+- Add sameAs relationships between Pleiades and VIAF identifiers.
+
 0.12 (2013-05-09)
 -----------------
 - Add table of URIs for Classical Atlas Project authors and contributors.

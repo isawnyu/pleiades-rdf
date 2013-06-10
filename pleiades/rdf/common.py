@@ -126,11 +126,11 @@ def principals(context):
         creators.remove("sgillies")
     return creators, contributors
 
-cap_authors = {}
-f = open(os.path.join(os.path.dirname(__file__), 'cap-authors.csv'))
+authority = {}
+f = open(os.path.join(os.path.dirname(__file__), 'authority.csv'))
 reader = csv.reader(f)
-for key, val in list(reader)[1:]:
-    cap_authors[key] = val
+for label, username, uri in list(reader)[1:]:
+    authority[label] = (username, uri)
 f.close()
 
 class PleiadesGrapher(object):
@@ -142,7 +142,7 @@ class PleiadesGrapher(object):
         self.wftool = getToolByName(context, 'portal_workflow')
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.vocabs = self.portal['vocabularies']
-        self.cap_authors = cap_authors
+        self.authority = authority
 
     def dcterms(self, context, g):
         """Return a set of tuples covering DC metadata"""
@@ -179,7 +179,12 @@ class PleiadesGrapher(object):
 
         for principal in creators:
             p = user_info(context, principal)
-            url = p.get('url') or self.cap_authors.get(principal)
+            url = p.get('url')
+            if not url:
+                if principal in self.authority:
+                    username, url = or self.authority.get(principal)
+                    if username and not url:
+                        url = "http://pleiades.stoa.org/author/" + username
             if url:
                 pnode = URIRef(url)
             else:
@@ -191,11 +196,14 @@ class PleiadesGrapher(object):
 
         for principal in contributors:
             p = user_info(context, principal)
-            url = p.get('url') or self.cap_authors.get(principal)
+            url = p.get('url')
+            if not url:
+                if principal in self.authority:
+                    username, url = or self.authority.get(principal)
+                    if username and not url:
+                        url = "http://pleiades.stoa.org/author/" + username
             if url:
                 pnode = URIRef(url)
-            elif p.get('fullname') == 'DARMC':
-                pnode = URIRef("http://darmc.harvard.edu")
             else:
                 pnode = BNode()
             g.add((subj, DCTERMS['contributor'], pnode))
@@ -689,17 +697,30 @@ class PersonsGrapher(PleiadesGrapher):
         
         # First, the Pleiades site contributors.
         for u in users:
+            
             info = user_info(context, u)
-            if info.get('url') and info.get('fullname'):
+            fullname = info.get('fullname')
+            
+            # Site users.
+            if info.get('url') and fullname:
                 subj = URIRef(info['url'])
                 g.add((subj, RDF.type, FOAF['Person']))
-                g.add((subj, FOAF['name'], Literal(info.get('fullname'))))
-        
-        # Next, the Classical Atlas Project contributors.
-        for label, uri in self.cap_authors.items():
-            subj = URIRef(uri)
-            g.add((subj, RDF.type, FOAF['Person']))
-            g.add((subj, FOAF['name'], Literal(label)))
+                g.add((subj, FOAF['name'], Literal(fullname)))
+                
+                if fullname in self.authority:
+                    username, uri = self.authority[fullname]
+                    g.add((subj, OWL['sameAs'], URIRef(uri)))
+
+            # Non-user authors listed in the authority file.
+            elif u in self.authority:
+                username, uri = self.authority[u]
+                if username and not uri:
+                    uri = "http://pleiades.stoa.org/author/" + username
+                if not uri:
+                    continue
+                subj = URIRef(uri)
+                g.add((subj, RDF.type, FOAF['Person']))
+                g.add((subj, FOAF['name'], Literal(label)))
 
         return g
 
