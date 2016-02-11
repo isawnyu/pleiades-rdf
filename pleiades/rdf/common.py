@@ -182,7 +182,7 @@ class PleiadesGrapher(object):
             url = p.get('url')
             if not url:
                 if principal in self.authority:
-                    username, url = or self.authority.get(principal)
+                    username, url = self.authority.get(principal)
                     if username and not url:
                         url = "http://pleiades.stoa.org/author/" + username
             if url:
@@ -199,7 +199,7 @@ class PleiadesGrapher(object):
             url = p.get('url')
             if not url:
                 if principal in self.authority:
-                    username, url = or self.authority.get(principal)
+                    username, url = self.authority.get(principal)
                     if username and not url:
                         url = "http://pleiades.stoa.org/author/" + username
             if url:
