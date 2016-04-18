@@ -3,6 +3,7 @@
 import logging
 from optparse import OptionParser
 
+import transaction
 from AccessControl.SecurityManagement import newSecurityManager
 from AccessControl.SecurityManager import setSecurityPolicy
 from DateTime import DateTime
@@ -14,6 +15,8 @@ from Testing.makerequest import makerequest
 from pleiades.dump import secure, getSite
 from pleiades.rdf.common import PlaceGrapher, PersonsGrapher, VocabGrapher
 from pleiades.rdf.common import place_graph
+
+COMMIT_THRESHOLD = 50
 
 if __name__ == '__main__':
     from os import environ
@@ -65,6 +68,7 @@ if __name__ == '__main__':
 
     app = spoofRequest(app)
     site = getSite(app)
+    count = 0
 
     if opts.authors:
 
@@ -114,6 +118,9 @@ if __name__ == '__main__':
                     g += PlaceGrapher(site, app).link(obj)
             except Exception, e:
                 log.exception("Failed to add object graph of %r to dump batch: %s", obj, e)
+            count += 1
+            if count % COMMIT_THRESHOLD == 0:
+                transaction.commit()
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Places %s
 # Date: %s
@@ -144,6 +151,9 @@ if __name__ == '__main__':
                     g += PlaceGrapher(site, app).link(obj)
             except Exception, e:
                 log.exception("Failed to add object graph of %r to dump batch: %s", obj, e)
+            count += 1
+            if count % COMMIT_THRESHOLD == 0:
+                transaction.commit()
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Places Range %s
 # Date: %s

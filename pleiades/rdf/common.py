@@ -16,7 +16,7 @@ from shapely import wkt
 from Acquisition import aq_inner, aq_parent
 from Products.CMFCore.utils import getToolByName
 
-from pleiades.geographer.geo import IGeoreferenced, location_precision
+from pleiades.geographer.geo import location_precision
 from pleiades.json.browser import wrap
 
 from Products.PleiadesEntity.browser.attestations import TimeSpanWrapper
@@ -370,50 +370,26 @@ class PlaceGrapher(PleiadesGrapher):
         # Names as skos:label and prefLabel
         folder_path = "/".join(context.getPhysicalPath())
         brains = self.catalog(
-            path={'query': folder_path, 'depth': 1}, 
-            portal_type='Name', 
+            path={'query': folder_path, 'depth': 1},
+            portal_type='Name',
             review_state='published')
-        objs = [b.getObject() for b in brains]
-        name_ratings = [
-            self.catalog.getIndexDataForRID(
-                b.getRID())['average_rating'] for b in brains]
-        rated_names = sorted(
-            zip(name_ratings, objs),
-            reverse=True)
-        
-        for rating, obj in rated_names[:1]:
-            name = Literal(
-                obj.getNameAttested() or obj.getNameTransliterated(),
-                obj.getNameLanguage() or None)
-            if rating and rating[0] > 0.0:
-                g.add((
-                    context_subj,
-                    SKOS['prefLabel'],
-                    name))
-            else:
-                g.add((
-                    context_subj,
-                    SKOS['altLabel'],
-                    name))
-        
-        for rating, obj in rated_names[1:]:
+        names = [b.getObject() for b in brains]
+
+        for obj in names:
             name = Literal(
                 obj.getNameAttested() or obj.getNameTransliterated(),
                 obj.getNameLanguage() or None)
             g.add((
                 context_subj,
-                SKOS['altLabel'], 
+                SKOS['altLabel'],
                 name))
-        
-        # Names
-        for rating, obj in rated_names:
-            
+
             name_subj = URIRef(context_page + "/" + obj.getId())
             g.add((context_subj, PLEIADES['hasName'], name_subj))
             g.add((name_subj, RDF.type, PLEIADES['Name']))
-            
+
             g = self.dcterms(obj, g)
-            
+
             g = self.temporal(obj, g, name_subj, vocabs=vocabs)
             g = self.provenance(obj, g, name_subj)
             g = self.references(obj, g, name_subj)
@@ -421,39 +397,36 @@ class PlaceGrapher(PleiadesGrapher):
             nameAttested = obj.getNameAttested()
             if nameAttested:
                 g.add((
-                    name_subj, 
-                    PLEIADES['nameAttested'], 
+                    name_subj,
+                    PLEIADES['nameAttested'],
                     Literal(nameAttested, obj.getNameLanguage() or None)))
 
             for nr in obj.getNameTransliterated().split(','):
                 nr = nr.strip()
                 g.add((name_subj, PLEIADES['nameRomanized'], Literal(nr)))
 
-        ## representative point
+        # representative point
         xs = []
         ys = []
         folder_path = "/".join(context.getPhysicalPath())
         brains = self.catalog(
-            path={'query': folder_path, 'depth': 1}, 
-            portal_type='Location', 
+            path={'query': folder_path, 'depth': 1},
+            portal_type='Location',
             review_state='published')
         locs = [b.getObject() for b in brains]
-        location_ratings = [
-            self.catalog.getIndexDataForRID(
-                b.getRID())['average_rating'] for b in brains]
         features = [wrap(ob, 0) for ob in locs]
 
         # get representative point
         loc_prec = location_precision(context)
         if loc_prec == 'precise':
             repr_point = None
-            for r, f in sorted(zip(location_ratings, features), reverse=True):
+            for f in features:
                 if f.geometry and hasattr(f.geometry, '__geo_interface__'):
                     shape = asShape(f.geometry)
                     b = shape.bounds
                     xs.extend([b[0], b[2]])
                     ys.extend([b[1], b[3]])
-                    if repr_point is None and r and r[0] > 0.0:
+                    if repr_point is None:
                         repr_point = shape.centroid
             if len(xs) * len(ys) > 0:
                 bbox = [min(xs), min(ys), max(xs), max(ys)]
@@ -503,7 +476,7 @@ class PlaceGrapher(PleiadesGrapher):
                             OSSPATIAL['within'],
                             URIRef(grid_uri)))
 
-                        e = URIRef(grid_uri + "-extent") # the grid's extent
+                        e = URIRef(grid_uri + "-extent")  # the grid's extent
                         g.add((e, RDF.type, OSGEO['AbstractGeometry']))
                         g.add((
                             URIRef(grid_uri),
@@ -596,8 +569,8 @@ class PlaceGrapher(PleiadesGrapher):
                     log.exception("Couldn't wrap and graph %r", obj)
 
         # connects with
-        for f in (context.getConnections() + 
-                context.getConnections_from()):
+        for f in (context.getConnections() +
+                  context.getConnections_from()):
             if self.wftool.getInfoFor(f, 'review_state') != 'published':
                 continue
             furl = f.absolute_url()
