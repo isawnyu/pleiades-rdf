@@ -1,6 +1,7 @@
 # Run as a script, this dumps all published places to N3 RDF
 
 import logging
+import sys
 from optparse import OptionParser
 
 import transaction
@@ -12,7 +13,7 @@ from Products.CMFCore.tests.base.security import OmnipotentUser
 from Products.CMFCore.utils import getToolByName
 from Testing.makerequest import makerequest
 
-from pleiades.dump import secure, getSite
+from pleiades.dump import secure, getSite, spoofRequest
 from pleiades.rdf.common import PlaceGrapher, PersonsGrapher, VocabGrapher
 from pleiades.rdf.common import place_graph
 
@@ -20,19 +21,8 @@ COMMIT_THRESHOLD = 50
 
 if __name__ == '__main__':
     from os import environ
-    from sys import argv, stdin, stdout
 
     log = logging.getLogger('pleiades.rdf')
-
-    def spoofRequest(app):
-        _policy=PermissiveSecurityPolicy()
-        _oldpolicy=setSecurityPolicy(_policy)
-        newSecurityManager(None, OmnipotentUser().__of__(app.acl_users))
-        this_environ = {'SERVER_PORT': '80', 'REQUEST_METHOD': 'GET'}
-        this_environ["SERVER_NAME"] =  environ.get('SERVER_NAME', 'localhost')
-        if 'VH_ROOT' in environ:
-            this_environ['VH_ROOT'] = environ['VH_ROOT']
-        return makerequest(app, environ=this_environ)
 
     parser = OptionParser()
     parser.add_option(
@@ -61,12 +51,20 @@ if __name__ == '__main__':
         action='store_true',
         help='Interpret places as a range. Example: "-p=1,3 -r" dumps all places starting with "1" and up to but not including "3" or higher')
 
-    opts, args = parser.parse_args(argv[1:])
+    opts, args = parser.parse_args(sys.argv[1:])
 
     if (int(bool(opts.authors)) + int(bool(opts.vocabulary)) + int(bool(opts.places))) > 1:
         raise ValueError("-a, -p, and -v options are exclusive")
 
     app = spoofRequest(app)
+    server_name = environ.get('SERVER_NAME', 'pleiades.stoa.org').strip()
+    vh_root = environ.get('VH_ROOT', '/plone/').strip()
+    app.REQUEST.environ.update({'SERVER_PORT': '80', 'REQUEST_METHOD': 'GET',
+                                'SERVER_NAME': server_name,
+                                'VH_ROOT': vh_root})
+    app.REQUEST.setServerURL('http', server_name)
+    app.REQUEST.other['VirtualRootPhysicalPath'] = vh_root
+
     site = getSite(app)
     count = 0
 
