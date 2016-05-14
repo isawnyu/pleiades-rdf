@@ -18,6 +18,7 @@ from Products.CMFCore.utils import getToolByName
 
 from pleiades.geographer.geo import location_precision
 from pleiades.json.browser import wrap
+from pleiades.vocabularies.vocabularies import get_vocabulary
 
 from Products.PleiadesEntity.browser.attestations import TimeSpanWrapper
 
@@ -238,8 +239,9 @@ class PlaceGrapher(PleiadesGrapher):
 
     def temporal(self, context, g, subj, vocabs=True):
         
-        periods = self.vocabs['time-periods']
-        purl = periods.absolute_url()
+        periods = get_vocabulary('time_periods')
+        periods = dict([(p['id'], p['title']) for p in periods])
+        purl = self.portal.absolute_url() + '/time-periods'
         vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             purl = purl.replace(vh_root, '')
