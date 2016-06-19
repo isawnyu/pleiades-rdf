@@ -14,8 +14,9 @@ from Products.CMFCore.utils import getToolByName
 from Testing.makerequest import makerequest
 
 from pleiades.dump import secure, getSite, spoofRequest
-from pleiades.rdf.common import PlaceGrapher, PersonsGrapher, VocabGrapher
+from pleiades.rdf.common import PlaceGrapher, PersonsGrapher, VocabGrapher, RegVocabGrapher
 from pleiades.rdf.common import place_graph
+from pleiades.vocabularies.vocabularies import get_vocabulary
 
 COMMIT_THRESHOLD = 50
 
@@ -84,8 +85,11 @@ if __name__ == '__main__':
 
     elif opts.vocabulary:
 
-        vocab = site['vocabularies'][opts.vocabulary]
-        g = VocabGrapher(site, app).scheme(vocab)
+        if opts.vocabulary == "time-periods":
+            g = RegVocabGrapher(site, app).scheme('time_periods')
+        else:
+            vocab = site['vocabularies'][opts.vocabulary]
+            g = VocabGrapher(site, app).scheme(vocab)
         sys.stdout.write("""# Pleiades RDF Dump
 # Contents: Pleiades Vocabulary '%s'
 # Date: %s
