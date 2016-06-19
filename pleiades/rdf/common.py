@@ -656,51 +656,6 @@ class VocabGrapher(PleiadesGrapher):
         return g
 
 
-class PersonsGrapher(PleiadesGrapher):
-
-    def authors(self, context):
-        # Note: Authors without Pleiades pages will appear as blank nodes
-        # in the Places RDF files.
-
-        g = place_graph()
-        fake_users = ['auser', 'juser']
-        contributors = set(self.catalog.uniqueValuesFor('Contributors'))
-        creators = set(self.catalog.uniqueValuesFor('Creator'))
-        users = contributors.union(creators)
-        for u in fake_users:
-            if u in users:
-                users.remove(u)
-
-        # First, the Pleiades site contributors.
-        for u in users:
-
-            info = user_info(context, u)
-            fullname = info.get('fullname')
-
-            # Site users.
-            if info.get('url') and fullname:
-                subj = URIRef(info['url'])
-                g.add((subj, RDF.type, FOAF['Person']))
-                g.add((subj, FOAF['name'], Literal(fullname)))
-
-                if fullname in self.authority:
-                    username, uri = self.authority[fullname]
-                    g.add((subj, OWL['sameAs'], URIRef(uri)))
-
-            # Non-user authors listed in the authority file.
-            elif u in self.authority:
-                username, uri = self.authority[u]
-                if username and not uri:
-                    uri = "http://pleiades.stoa.org/author/" + username
-                if not uri:
-                    continue
-                subj = URIRef(uri)
-                g.add((subj, RDF.type, FOAF['Person']))
-                g.add((subj, FOAF['name'], Literal(label)))
-
-        return g
-
-
 class RegVocabGrapher(PleiadesGrapher):
 
     def concept(self, term, g):
