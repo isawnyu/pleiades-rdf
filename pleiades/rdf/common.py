@@ -100,6 +100,7 @@ def skos_graph():
     g.bind('dcterms', DCTERMS)
     g.bind('foaf', FOAF)
     g.bind('skos', SKOS)
+    g.bind('owl', OWL)
     return g
 
 
@@ -111,7 +112,7 @@ def user_info(context, username):
     member = mtool.getMemberById(un)
     if member:
         return {
-            "id": member.getId(), 
+            "id": member.getId(),
             "fullname": member.getProperty('fullname'),
             'url': "http://pleiades.stoa.org/author/" + member.getId()}
     else:
@@ -122,7 +123,7 @@ def principals(context):
     creators = [p.strip() for r in creators for p in r.split(',')]
     contributors = list(context.Contributors())
     contributors = [p.strip() for r in contributors for p in r.split(',')]
-    if ("sgillies" in creators and 
+    if ("sgillies" in creators and
             ("sgillies" in contributors or "S. Gillies" in contributors)):
         creators.remove("sgillies")
     return creators, contributors
@@ -157,24 +158,24 @@ class PleiadesGrapher(object):
         # Title, Description, and Modification Date
         g.add((
             subj,
-            DCTERMS['title'], 
+            DCTERMS['title'],
             Literal(context.Title())))
         g.add((
             subj,
-            DCTERMS['description'], 
+            DCTERMS['description'],
             Literal(context.Description())))
         g.add((
             subj,
-            DCTERMS['modified'], 
+            DCTERMS['modified'],
             Literal(context.ModificationDate())))
-        
+
         # Tags
         for tag in context.Subject():
             g.add((
                 subj,
-                DCTERMS['subject'], 
+                DCTERMS['subject'],
                 Literal(tag)))
-        
+
         # Authors
         creators, contributors = principals(context)
 
@@ -211,7 +212,7 @@ class PleiadesGrapher(object):
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
                 g.add((pnode, FOAF['name'], Literal(p.get('fullname'))))
-        
+
         return g
 
 
@@ -219,38 +220,38 @@ class PlaceGrapher(PleiadesGrapher):
 
     def link(self, context):
         g = place_graph()
-        
+
         purl = context.absolute_url()
         vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             purl = purl.replace(vh_root, '')
         context_page = purl
         context_subj = URIRef(context_page + "#this")
-        
+
         remote = context.getRemoteUrl()
         if remote:
             uri = "/".join([
-                "http:/", 
+                "http:/",
                 urlparse(context_page)[1],
                 remote.strip("/")])
             g.add((context_subj, OWL['sameAs'], URIRef(uri + "#this")))
-        
+
         return g
 
     def temporal(self, context, g, subj, vocabs=True):
-        
+
         periods = get_vocabulary('time_periods')
         periods = dict([(p['id'], p['title']) for p in periods])
-        purl = self.portal.absolute_url() + '/time-periods'
+        purl = self.portal.absolute_url() + '/vocabularies/time-periods'
         vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             purl = purl.replace(vh_root, '')
 
         for attestation in context.getAttestations():
             g.add((
-                subj, 
+                subj,
                 PLEIADES['during'],
-                URIRef(purl + "/" + 
+                URIRef(purl + "/" +
                     attestation['timePeriod'])))
             if vocabs:
                 g = VocabGrapher(periods, self.request).concept(
@@ -259,11 +260,11 @@ class PlaceGrapher(PleiadesGrapher):
         span = TimeSpanWrapper(context).timeSpan
         if span:
             g.add((
-                subj, 
+                subj,
                 PLEIADES['start_date'],
                 Literal(span['start'])))
             g.add((
-                subj, 
+                subj,
                 PLEIADES['end_date'],
                 Literal(span['end'])))
 
@@ -283,7 +284,7 @@ class PlaceGrapher(PleiadesGrapher):
             identifier = c.get('identifier')
             citation_type = c.get('type')
             citation_range = c.get('range')
-            if (identifier and 
+            if (identifier and
                     identifier.startswith("http://") or
                     identifier.startswith("doi") or
                     identifier.startswith("issn") or
@@ -292,7 +293,7 @@ class PlaceGrapher(PleiadesGrapher):
             else:
                 ref = BNode()
             g.add((
-                subj, 
+                subj,
                 CITO[mapping.get(citation_type, citation_type)],
                 ref))
             g.add((
@@ -305,25 +306,25 @@ class PlaceGrapher(PleiadesGrapher):
     def place(self, context, vocabs=True):
         """Create a graph centered on a Place and its Feature."""
         g = place_graph()
-        
+
         purl = context.absolute_url()
         vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
             purl = purl.replace(vh_root, '')
-        
+
         context_page = purl
         context_subj = URIRef(context_page)
         feature_subj = URIRef(context_page + "#this")
-        
+
         # Type
         g.add((context_subj, RDF.type, PLEIADES['Place']))
-        
+
         g.add((context_subj, RDF.type, SKOS['Concept']))
         g.add((
-            context_subj, 
-            SKOS['inScheme'], 
+            context_subj,
+            SKOS['inScheme'],
             URIRef("http://pleiades.stoa.org/places")))
-        
+
         # Triples concerning the real world ancient place.
         g.add((feature_subj, RDF.type, SPATIAL['Feature']))
 
@@ -336,13 +337,13 @@ class PlaceGrapher(PleiadesGrapher):
         # title as rdfs:label
         g.add((
             feature_subj,
-            RDFS['label'], 
+            RDFS['label'],
             Literal(context.Title())))
 
         # description as rdfs:comment
         g.add((
             feature_subj,
-            RDFS['comment'], 
+            RDFS['comment'],
             Literal(context.Description())))
 
         g = self.dcterms(context, g)
@@ -434,7 +435,7 @@ class PlaceGrapher(PleiadesGrapher):
                 bbox = [min(xs), min(ys), max(xs), max(ys)]
             else:
                 bbox = None
-        
+
             if repr_point:
                 g.add((
                     context_subj,
@@ -495,11 +496,11 @@ class PlaceGrapher(PleiadesGrapher):
 
         # Locations
         for obj in locs:
-            
+
             locn_subj = URIRef(context_page + "/" + obj.getId())
             g.add((context_subj, PLEIADES['hasLocation'], locn_subj))
             g.add((locn_subj, RDF.type, PLEIADES['Location']))
-            
+
             g = self.dcterms(obj, g)
 
             g = self.temporal(obj, g, locn_subj, vocabs=vocabs)
@@ -556,7 +557,7 @@ class PlaceGrapher(PleiadesGrapher):
             else:
                 try:
                     f = wrap(obj, 0)
-                    if (f.geometry and 
+                    if (f.geometry and
                             hasattr(f.geometry, '__geo_interface__')):
                         shape = asShape(f.geometry)
                         g.add((
@@ -600,7 +601,7 @@ class VocabGrapher(PleiadesGrapher):
 
     def concept(self, term, g):
         """Return a set of tuples representing the term"""
-        
+
         turl = term.absolute_url()
         vh_root = term.REQUEST.environ.get('VH_ROOT')
         if vh_root:
@@ -608,7 +609,7 @@ class VocabGrapher(PleiadesGrapher):
         term_ref = URIRef(turl)
         label = term.getTermValue()
         note = term.Description()
-            
+
         g.add((
             term_ref,
             RDF.type,
@@ -617,13 +618,13 @@ class VocabGrapher(PleiadesGrapher):
             term_ref,
             SKOS['prefLabel'],
             Literal(label, "en")))
-        
+
         if note:
             g.add((
                 term_ref,
                 SKOS['scopeNote'],
                 Literal(note, "en")))
-        
+
         vocab = aq_parent(aq_inner(term))
         vurl = vocab.absolute_url()
         vh_root = vocab.REQUEST.environ.get('VH_ROOT')
@@ -633,7 +634,7 @@ class VocabGrapher(PleiadesGrapher):
             term_ref,
             SKOS['inScheme'],
             URIRef(vurl)))
- 
+
         return g
 
     def scheme(self, vocab):
@@ -655,6 +656,73 @@ class VocabGrapher(PleiadesGrapher):
         return g
 
 
+class RegVocabGrapher(PleiadesGrapher):
+
+    def concept(self, term, g):
+        """Return a set of tuples representing the term"""
+
+        vurl = self.portal.absolute_url() + '/vocabularies/time-periods'
+        turl = vurl + '/' + term['id']
+        vh_root = self.request.environ.get('VH_ROOT')
+        if vh_root:
+            turl = turl.replace(vh_root, '')
+        term_ref = URIRef(turl)
+        label = term['title']
+        note = term['description']
+        same_as = term['same_as']
+
+        g.add((
+            term_ref,
+            RDF.type,
+            SKOS['Concept']))
+        g.add((
+            term_ref,
+            SKOS['prefLabel'],
+            Literal(label, "en")))
+
+        if note:
+            g.add((
+                term_ref,
+                SKOS['scopeNote'],
+                Literal(note, "en")))
+
+        if same_as:
+            g.add((
+                term_ref,
+                OWL['sameAs'],
+                URIRef(same_as)))
+
+        vh_root = self.request.environ.get('VH_ROOT')
+        if vh_root:
+            vurl = vurl.replace(vh_root, '')
+        g.add((
+            term_ref,
+            SKOS['inScheme'],
+            URIRef(vurl)))
+
+        return g
+
+    def scheme(self, vocab_name):
+        g = place_graph()
+        vurl = self.portal.absolute_url() + '/vocabularies/%s' % vocab_name
+        vh_root = self.request.environ.get('VH_ROOT')
+        if vh_root:
+            vurl = vurl.replace(vh_root, '')
+        g.add((
+            URIRef(vurl),
+            RDF.type,
+            SKOS['ConceptScheme']))
+
+        # No dublin core in registry vocabs
+        g = self.dcterms(self.context, g)
+
+        vocab = get_vocabulary(vocab_name)
+        for term in vocab:
+            g = self.concept(term, g)
+
+        return g
+
+
 class PersonsGrapher(PleiadesGrapher):
 
     def authors(self, context):
@@ -669,19 +737,19 @@ class PersonsGrapher(PleiadesGrapher):
         for u in fake_users:
             if u in users:
                 users.remove(u)
-        
+
         # First, the Pleiades site contributors.
         for u in users:
-            
+
             info = user_info(context, u)
             fullname = info.get('fullname')
-            
+
             # Site users.
             if info.get('url') and fullname:
                 subj = URIRef(info['url'])
                 g.add((subj, RDF.type, FOAF['Person']))
                 g.add((subj, FOAF['name'], Literal(fullname)))
-                
+
                 if fullname in self.authority:
                     username, uri = self.authority[fullname]
                     g.add((subj, OWL['sameAs'], URIRef(uri)))
