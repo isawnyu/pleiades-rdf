@@ -241,7 +241,7 @@ class PlaceGrapher(PleiadesGrapher):
     def temporal(self, context, g, subj, vocabs=True):
 
         periods = get_vocabulary('time_periods')
-        periods = dict([(p['id'], p['title']) for p in periods])
+        periods = dict([(p['id'], p) for p in periods])
         purl = self.portal.absolute_url() + '/vocabularies/time-periods'
         vh_root = context.REQUEST.environ.get('VH_ROOT')
         if vh_root:
@@ -254,7 +254,7 @@ class PlaceGrapher(PleiadesGrapher):
                 URIRef(purl + "/" +
                     attestation['timePeriod'])))
             if vocabs:
-                g = VocabGrapher(periods, self.request).concept(
+                g = RegVocabGrapher(self.portal, self.request).concept(
                     periods[attestation['timePeriod']], g)
 
         span = TimeSpanWrapper(context).timeSpan
