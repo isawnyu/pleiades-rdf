@@ -716,7 +716,15 @@ class RegVocabGrapher(PleiadesGrapher):
             SKOS['ConceptScheme']))
 
         # No dublin core in registry vocabs
-        g = self.dcterms(self.context, g)
+        # hardcoding for now
+        g.add((
+            URIRef(vurl),
+            DCTERMS['title'],
+            Literal("Time Periods")))
+        g.add((
+            URIRef(vurl),
+            DCTERMS['description'],
+            Literal("Named time periods for the site.")))
 
         vocab = get_vocabulary(vocab_name)
         for term in vocab:
