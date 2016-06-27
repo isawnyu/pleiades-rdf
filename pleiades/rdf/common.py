@@ -705,8 +705,10 @@ class RegVocabGrapher(PleiadesGrapher):
         return g
 
     def scheme(self, vocab_name):
+        # we have to use underscore for vocab ids, but old vocab names have dash
+        output_name = vocab_name.replace('_', '-')
         g = place_graph()
-        vurl = self.portal.absolute_url() + '/vocabularies/%s' % vocab_name
+        vurl = self.portal.absolute_url() + '/vocabularies/%s' % output_name
         vh_root = self.request.environ.get('VH_ROOT')
         if vh_root:
             vurl = vurl.replace(vh_root, '')
