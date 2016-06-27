@@ -119,7 +119,9 @@ def user_info(context, username):
         return {"id": None, "fullname": un, 'url': None}
 
 def principals(context):
-    creators = list(context.Creators())
+    creators =  getattr(context, 'Creators', [])
+    if callable(creators):
+        creators = list(creators())
     creators = [p.strip() for r in creators for p in r.split(',')]
     contributors = list(context.Contributors())
     contributors = [p.strip() for r in contributors for p in r.split(',')]
