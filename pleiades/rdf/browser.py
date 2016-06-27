@@ -5,7 +5,7 @@ import logging
 from zope.interface import implements, Interface
 from zope.publisher.browser import BrowserView
 
-from pleiades.rdf.common import PlaceGrapher, VocabGrapher
+from pleiades.rdf.common import PlaceGrapher, VocabGrapher, RegVocabGrapher
 
 EXTS = {'turtle': '.ttl', 'pretty-xml': '.rdf'}
 
