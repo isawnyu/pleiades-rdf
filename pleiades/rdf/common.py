@@ -729,7 +729,7 @@ class RegVocabGrapher(PleiadesGrapher):
         key = vocab_name.replace('-', '_')
         vocab = get_vocabulary(key)
         for term in vocab:
-            g = self.concept(term, g)
+            g = self.concept(vocab_name, term, g)
 
         return g
 
