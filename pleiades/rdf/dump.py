@@ -85,8 +85,8 @@ if __name__ == '__main__':
 
     elif opts.vocabulary:
 
-        if opts.vocabulary == "time-periods":
-            g = RegVocabGrapher(site, app).scheme('time_periods')
+        if opts.vocabulary in ('time-periods', 'place-types'):
+            g = RegVocabGrapher(site, app).scheme(opts.vocabulary)
         else:
             vocab = site['vocabularies'][opts.vocabulary]
             g = VocabGrapher(site, app).scheme(vocab)

@@ -257,7 +257,7 @@ class PlaceGrapher(PleiadesGrapher):
                     attestation['timePeriod'])))
             if vocabs:
                 g = RegVocabGrapher(self.portal, self.request).concept(
-                    periods[attestation['timePeriod']], g)
+                    'time-periods', periods[attestation['timePeriod']], g)
 
         span = TimeSpanWrapper(context).timeSpan
         if span:
@@ -353,24 +353,24 @@ class PlaceGrapher(PleiadesGrapher):
 
         # Place or feature types
 
-        place_types = self.vocabs['place-types']
+        place_types = get_vocabulary('place_types')
+        place_types = dict([(t['id'], t) for t in place_types])
+        url = self.portal.absolute_url() + '/vocabularies/place-types'
+        vh_root = context.REQUEST.environ.get('VH_ROOT')
         pcats = set(filter(None, context.getPlaceType()))
         for pcat in pcats:
             item = place_types.get(pcat)
             if not item:
                 continue
-            iurl = item.absolute_url()
-            vh_root = item.REQUEST.environ.get('VH_ROOT')
-            if vh_root:
-                iurl = iurl.replace(vh_root, '')
+            iurl = url + '/' + pcat
             g.add((
                 context_subj,
                 PLEIADES['hasFeatureType'],
                 URIRef(iurl)))
 
             if vocabs:
-                g = VocabGrapher(place_types, self.request).concept(
-                    place_types[pcat], g)
+                g = RegVocabGrapher(self.portal, self.request).concept(
+                    'place-types', place_types[pcat], g)
 
         # Names as skos:label and prefLabel
         folder_path = "/".join(context.getPhysicalPath())
@@ -660,10 +660,10 @@ class VocabGrapher(PleiadesGrapher):
 
 class RegVocabGrapher(PleiadesGrapher):
 
-    def concept(self, term, g):
+    def concept(self, vocab_name, term, g):
         """Return a set of tuples representing the term"""
 
-        vurl = self.portal.absolute_url() + '/vocabularies/time-periods'
+        vurl = self.portal.absolute_url() + '/vocabularies/' + vocab_name
         turl = vurl + '/' + term['id']
         vh_root = self.request.environ.get('VH_ROOT')
         if vh_root:
@@ -705,10 +705,8 @@ class RegVocabGrapher(PleiadesGrapher):
         return g
 
     def scheme(self, vocab_name):
-        # we have to use underscore for vocab ids, but old vocab names have dash
-        output_name = vocab_name.replace('_', '-')
         g = place_graph()
-        vurl = self.portal.absolute_url() + '/vocabularies/%s' % output_name
+        vurl = self.portal.absolute_url() + '/vocabularies/%s' % vocab_name
         vh_root = self.request.environ.get('VH_ROOT')
         if vh_root:
             vurl = vurl.replace(vh_root, '')
@@ -728,9 +726,10 @@ class RegVocabGrapher(PleiadesGrapher):
             DCTERMS['description'],
             Literal("Named time periods for the site.")))
 
-        vocab = get_vocabulary(vocab_name)
+        key = vocab_name.replace('-', '_')
+        vocab = get_vocabulary(key)
         for term in vocab:
-            g = self.concept(term, g)
+            g = self.concept(vocab_name, term, g)
 
         return g
 
