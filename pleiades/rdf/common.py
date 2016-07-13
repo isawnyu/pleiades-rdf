@@ -574,8 +574,7 @@ class PlaceGrapher(PleiadesGrapher):
                     log.exception("Couldn't wrap and graph %r", obj)
 
         # connects with
-        for f in (context.getSubConnections() +
-                  context.getReverseConnections()):
+        for f in context.getConnectedPlaces():
             if self.wftool.getInfoFor(f, 'review_state') != 'published':
                 continue
             furl = f.absolute_url()
