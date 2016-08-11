@@ -285,7 +285,7 @@ class PlaceGrapher(PleiadesGrapher):
         for c in context.getReferenceCitations():
             identifier = c.get('identifier')
             citation_type = c.get('type')
-            citation_title = c.get('title', '')
+            citation_title = c.get('short_title', '')
             citation_detail = c.get('citation_detail', '')
             citation_range = citation_title + (citation_title and ' ' or '') + citation_detail
             if (identifier and
