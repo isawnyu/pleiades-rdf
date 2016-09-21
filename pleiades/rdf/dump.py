@@ -76,7 +76,7 @@ if __name__ == '__main__':
 # Contents: Pleiades Authors
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
-# Credits: http://pleiades.stoa.org/credits
+# Credits: https://pleiades.stoa.org/credits
 # Triple count: %d
 
 """ % (DateTime(), len(g)))
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 # Contents: Pleiades Vocabulary '%s'
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
-# Credits: http://pleiades.stoa.org/credits
+# Credits: https://pleiades.stoa.org/credits
 # Triple count: %d
 
 """ % (opts.vocabulary, DateTime(), len(g)))
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 # Contents: Pleiades Places %s
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
-# Credits: http://pleiades.stoa.org/credits
+# Credits: https://pleiades.stoa.org/credits
 # Triple count: %d
 
 """ % (opts.places, DateTime(), len(g)))
@@ -160,7 +160,7 @@ if __name__ == '__main__':
 # Contents: Pleiades Places Range %s
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
-# Credits: http://pleiades.stoa.org/credits
+# Credits: https://pleiades.stoa.org/credits
 # Triple count: %d
 
 """ % (opts.places, DateTime(), len(g)))
@@ -188,7 +188,7 @@ if __name__ == '__main__':
 # Contents: Pleiades Errata %s
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
-# Credits: http://pleiades.stoa.org/credits
+# Credits: https://pleiades.stoa.org/credits
 # Triple count: %d
 
 """ % (opts.places, DateTime(), len(g)))
@@ -216,7 +216,7 @@ if __name__ == '__main__':
 # Contents: Pleiades Errata Range %s
 # Date: %s
 # License: http://creativecommons.org/licenses/by/3.0/us/
-# Credits: http://pleiades.stoa.org/credits
+# Credits: https://pleiades.stoa.org/credits
 # Triple count: %d
 
 """ % (opts.places, DateTime(), len(g)))
