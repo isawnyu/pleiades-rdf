@@ -52,9 +52,9 @@ OSSPATIAL = Namespace(OSSPATIAL_URI)
 OWL_URI = "http://www.w3.org/2002/07/owl#"
 OWL = Namespace(OWL_URI)
 
-PLACES = "http://pleiades.stoa.org/places/"
+PLACES = "https://pleiades.stoa.org/places/"
 
-PLEIADES_URI = "http://pleiades.stoa.org/places/vocab#"
+PLEIADES_URI = "https://pleiades.stoa.org/places/vocab#"
 PLEIADES = Namespace(PLEIADES_URI)
 
 PROVO_URI = "http://www.w3.org/TR/prov-o/#"
@@ -114,7 +114,7 @@ def user_info(context, username):
         return {
             "id": member.getId(),
             "fullname": member.getProperty('fullname'),
-            'url': "http://pleiades.stoa.org/author/" + member.getId()}
+            'url': "https://pleiades.stoa.org/author/" + member.getId()}
     else:
         return {"id": None, "fullname": un, 'url': None}
 
@@ -188,7 +188,7 @@ class PleiadesGrapher(object):
                 if principal in self.authority:
                     username, url = self.authority.get(principal)
                     if username and not url:
-                        url = "http://pleiades.stoa.org/author/" + username
+                        url = "https://pleiades.stoa.org/author/" + username
             if url:
                 pnode = URIRef(url)
             else:
@@ -205,7 +205,7 @@ class PleiadesGrapher(object):
                 if principal in self.authority:
                     username, url = self.authority.get(principal)
                     if username and not url:
-                        url = "http://pleiades.stoa.org/author/" + username
+                        url = "https://pleiades.stoa.org/author/" + username
             if url:
                 pnode = URIRef(url)
             else:
@@ -327,7 +327,7 @@ class PlaceGrapher(PleiadesGrapher):
         g.add((
             context_subj,
             SKOS['inScheme'],
-            URIRef("http://pleiades.stoa.org/places")))
+            URIRef("https://pleiades.stoa.org/places")))
 
         # Triples concerning the real world ancient place.
         g.add((feature_subj, RDF.type, SPATIAL['Feature']))
@@ -770,7 +770,7 @@ class PersonsGrapher(PleiadesGrapher):
             elif u in self.authority:
                 username, uri = self.authority[u]
                 if username and not uri:
-                    uri = "http://pleiades.stoa.org/author/" + username
+                    uri = "https://pleiades.stoa.org/author/" + username
                 if not uri:
                     continue
                 subj = URIRef(uri)
