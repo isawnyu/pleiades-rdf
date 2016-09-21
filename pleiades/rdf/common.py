@@ -180,7 +180,7 @@ class PleiadesGrapher(object):
 
         orig_url = str(subj).replace('https://', 'http://')
         if orig_url and orig_url != str(subj):
-            g.add(subj, OWL['sameAs'], URIRef(orig_url))
+            g.add((subj, OWL['sameAs'], URIRef(orig_url)))
 
         # Authors
         creators, contributors = principals(context)
@@ -272,7 +272,7 @@ class PlaceGrapher(PleiadesGrapher):
 
             orig_url = turl.replace('https://', 'http://')
             if orig_url and orig_url != turl:
-                g.add(URIRef(turl), OWL['sameAs'], URIRef(orig_url))
+                g.add((URIRef(turl), OWL['sameAs'], URIRef(orig_url)))
 
             if vocabs:
                 g = RegVocabGrapher(self.portal, self.request).concept(
@@ -371,7 +371,7 @@ class PlaceGrapher(PleiadesGrapher):
 
         orig_url = context_page.replace('https://', 'http://')
         if orig_url and orig_url != context_page:
-            g.add(context_subj, OWL['sameAs'], URIRef(orig_url))
+            g.add((context_subj, OWL['sameAs'], URIRef(orig_url)))
 
         g = self.dcterms(context, g)
         g = self.provenance(context, g, context_subj)
@@ -395,7 +395,7 @@ class PlaceGrapher(PleiadesGrapher):
 
             orig_url = iurl.replace('https://', 'http://')
             if orig_url and orig_url != iurl:
-                g.add(URIRef(iurl), OWL['sameAs'], URIRef(orig_url))
+                g.add((URIRef(iurl), OWL['sameAs'], URIRef(orig_url)))
 
             if vocabs:
                 g = RegVocabGrapher(self.portal, self.request).concept(
@@ -424,7 +424,7 @@ class PlaceGrapher(PleiadesGrapher):
 
             orig_url = str(name_subj).replace('https://', 'http://')
             if orig_url and orig_url != str(name_subj):
-                g.add(name_subj, OWL['sameAs'], URIRef(orig_url))
+                g.add((name_subj, OWL['sameAs'], URIRef(orig_url)))
 
             g = self.dcterms(obj, g)
 
@@ -544,7 +544,7 @@ class PlaceGrapher(PleiadesGrapher):
 
             orig_url = str(locn_subj).replace('https://', 'http://')
             if orig_url and orig_url != str(locn_subj):
-                g.add(locn_subj, OWL['sameAs'], URIRef(orig_url))
+                g.add((locn_subj, OWL['sameAs'], URIRef(orig_url)))
 
             dc_locn = obj.getLocation()
             gridbase = "http://atlantides.org/capgrids/"
@@ -675,7 +675,7 @@ class VocabGrapher(PleiadesGrapher):
 
         orig_url = turl.replace('https://', 'http://')
         if orig_url and orig_url != turl:
-            g.add(URIRef(turl), OWL['sameAs'], URIRef(orig_url))
+            g.add((URIRef(turl), OWL['sameAs'], URIRef(orig_url)))
 
         return g
 
@@ -694,7 +694,7 @@ class VocabGrapher(PleiadesGrapher):
 
         orig_url = vurl.replace('https://', 'http://')
         if orig_url and orig_url != vurl:
-            g.add(URIRef(vurl), OWL['sameAs'], URIRef(orig_url))
+            g.add((URIRef(vurl), OWL['sameAs'], URIRef(orig_url)))
 
         for key, term in vocab.items():
             g = self.concept(term, g)
@@ -748,7 +748,7 @@ class RegVocabGrapher(PleiadesGrapher):
 
         orig_url = turl.replace('https://', 'http://')
         if orig_url and orig_url != turl:
-            g.add(URIRef(turl), OWL['sameAs'], URIRef(orig_url))
+            g.add((URIRef(turl), OWL['sameAs'], URIRef(orig_url)))
 
         return g
 
@@ -776,7 +776,7 @@ class RegVocabGrapher(PleiadesGrapher):
 
         orig_url = vurl.replace('https://', 'http://')
         if orig_url and orig_url != vurl:
-            g.add(URIRef(vurl), OWL['sameAs'], URIRef(orig_url))
+            g.add((URIRef(vurl), OWL['sameAs'], URIRef(orig_url)))
 
         key = vocab_name.replace('-', '_')
         vocab = get_vocabulary(key)
