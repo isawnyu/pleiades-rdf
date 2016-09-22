@@ -488,32 +488,31 @@ class PlaceGrapher(PleiadesGrapher):
                 ref = loc.getLocation()
                 gridbase = "http://atlantides.org/capgrids/"
                 if ref and ref.startswith(gridbase):
-                    params = ref.rstrip("/")[len(gridbase):].split("/")
-                    if len(params) == 1:
-                        mapnum = params[0]
-                        grids = [None]
-                    elif len(params) == 2:
-                        mapnum = params[0]
-                        grids = [v.upper() for v in params[1].split("+")]
-                    else:
-                        log.error("Invalid location identifier %s" % ref)
-                        continue
-                    for grid in grids:
-                        grid_uri = gridbase + mapnum + "#" + (grid or "this")
-                        g.add((
-                            context_subj,
-                            OSSPATIAL['within'],
-                            URIRef(grid_uri)))
+                    try:
+                        params = ref.rstrip("/")[len(gridbase):].split("/")
+                        if len(params) == 1:
+                            mapnum = params[0]
+                            grids = [None]
+                        elif len(params) == 2:
+                            mapnum = params[0]
+                            grids = [v.upper() for v in params[1].split("+")]
+                        else:
+                            log.error("Invalid location identifier %s" % ref)
+                            continue
+                        for grid in grids:
+                            grid_uri = gridbase + mapnum + "#" + (grid or "this")
+                            g.add((
+                                context_subj,
+                                OSSPATIAL['within'],
+                                URIRef(grid_uri)))
 
-                        e = URIRef(grid_uri + "-extent")  # the grid's extent
-                        g.add((e, RDF.type, OSGEO['AbstractGeometry']))
-                        g.add((
-                            URIRef(grid_uri),
-                            OSGEO['extent'],
-                            e))
-
-                        bounds = capgrids.box(mapnum, grid)
-                        if len(bounds) >= 4:
+                            e = URIRef(grid_uri + "-extent")  # the grid's extent
+                            g.add((e, RDF.type, OSGEO['AbstractGeometry']))
+                            g.add((
+                                URIRef(grid_uri),
+                                OSGEO['extent'],
+                                e))
+                            bounds = capgrids.box(mapnum, grid)
                             shape = box(*bounds)
                             g.add((
                                 e,
@@ -523,6 +522,8 @@ class PlaceGrapher(PleiadesGrapher):
                                 e,
                                 OSGEO['asWKT'],
                                 Literal(wkt.dumps(shape))))
+                    except (ValueError, TypeError):
+                        log.exception("Exception caught computing grid extent for %r", loc)
 
         # Locations
         for obj in locs:
