@@ -188,13 +188,14 @@ class PleiadesGrapher(object):
         for principal in creators:
             p = user_info(context, principal)
             url = p.get('url')
+            opnode = None
             if not url:
                 if principal in self.authority:
                     username, url = self.authority.get(principal)
                     if username and not url:
                         url = "https://pleiades.stoa.org/author/" + username
-                        old_url = "http://pleiades.stoa.org/author/" + username
             if url:
+                old_url = url.replace('https://', 'http://')
                 pnode = URIRef(url)
                 opnode = URIRef(old_url)
             else:
@@ -210,13 +211,14 @@ class PleiadesGrapher(object):
         for principal in contributors:
             p = user_info(context, principal)
             url = p.get('url')
+            opnode = None
             if not url:
                 if principal in self.authority:
                     username, url = self.authority.get(principal)
                     if username and not url:
                         url = "https://pleiades.stoa.org/author/" + username
-                        old_url = "http://pleiades.stoa.org/author/" + username
             if url:
+                old_url = url.replace('https://', 'http://')
                 pnode = URIRef(url)
                 opnode = URIRef(old_url)
             else:
