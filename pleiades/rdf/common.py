@@ -272,10 +272,6 @@ class PlaceGrapher(PleiadesGrapher):
                 PLEIADES['during'],
                 URIRef(turl)))
 
-            orig_url = turl.replace('https://', 'http://')
-            if orig_url and orig_url != turl:
-                g.add((URIRef(turl), OWL['sameAs'], URIRef(orig_url)))
-
             if vocabs:
                 g = RegVocabGrapher(self.portal, self.request).concept(
                     'time-periods', periods[attestation['timePeriod']], g)
