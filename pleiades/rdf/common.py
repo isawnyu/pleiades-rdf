@@ -824,13 +824,13 @@ class PersonsGrapher(PleiadesGrapher):
                 username, uri = self.authority[u]
                 if username and not uri:
                     uri = "https://pleiades.stoa.org/author/" + username
-                    old_uri = "http://pleiades.stoa.org/author/" + username
                 if not uri:
                     continue
                 subj = URIRef(uri)
                 g.add((subj, RDF.type, FOAF['Person']))
                 g.add((subj, FOAF['name'], Literal(label)))
-                g.add((uri, OWL['sameAs'], old_uri))
+                old_uri = uri.replace('https://', 'http://')
+                g.add((URIRef(uri), OWL['sameAs'], URIRef(old_uri)))
 
         return g
 
