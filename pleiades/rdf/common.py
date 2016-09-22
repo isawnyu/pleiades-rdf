@@ -395,10 +395,6 @@ class PlaceGrapher(PleiadesGrapher):
                 PLEIADES['hasFeatureType'],
                 URIRef(iurl)))
 
-            orig_url = iurl.replace('https://', 'http://')
-            if orig_url and orig_url != iurl:
-                g.add((URIRef(iurl), OWL['sameAs'], URIRef(orig_url)))
-
             if vocabs:
                 g = RegVocabGrapher(self.portal, self.request).concept(
                     'place-types', place_types[pcat], g)
@@ -508,9 +504,6 @@ class PlaceGrapher(PleiadesGrapher):
                         continue
                     for grid in grids:
                         grid_uri = gridbase + mapnum + "#" + (grid or "this")
-                        bounds = capgrids.box(mapnum, grid)
-                        shape = box(*bounds)
-
                         g.add((
                             context_subj,
                             OSSPATIAL['within'],
@@ -522,14 +515,18 @@ class PlaceGrapher(PleiadesGrapher):
                             URIRef(grid_uri),
                             OSGEO['extent'],
                             e))
-                        g.add((
-                            e,
-                            OSGEO['asGeoJSON'],
-                            Literal(geojson.dumps(shape))))
-                        g.add((
-                            e,
-                            OSGEO['asWKT'],
-                            Literal(wkt.dumps(shape))))
+
+                        bounds = capgrids.box(mapnum, grid)
+                        if len(bounds) >= 4:
+                            shape = box(*bounds)
+                            g.add((
+                                e,
+                                OSGEO['asGeoJSON'],
+                                Literal(geojson.dumps(shape))))
+                            g.add((
+                                e,
+                                OSGEO['asWKT'],
+                                Literal(wkt.dumps(shape))))
 
         # Locations
         for obj in locs:
