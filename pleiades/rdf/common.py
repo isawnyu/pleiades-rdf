@@ -182,17 +182,12 @@ class PleiadesGrapher(object):
                 DCTERMS['subject'],
                 Literal(tag)))
 
-        orig_url = str(subj).replace('https://', 'http://')
-        if orig_url and orig_url != str(subj):
-            g.add((subj, OWL['sameAs'], URIRef(orig_url)))
-
         # Authors
         creators, contributors = principals(context)
 
         for principal in creators:
             p = user_info(context, principal)
             url = p.get('url')
-            opnode = None
             if not url:
                 if principal in self.authority:
                     username, url = self.authority.get(principal)
@@ -203,26 +198,15 @@ class PleiadesGrapher(object):
                 pnode = URIRef(url)
             else:
                 pnode = BNode()
-
-            if url.startswith('https://pleiades.stoa.org'):
-                old_url = url.replace('https://', 'http://')
-                opnode = URIRef(old_url)
 
             g.add((subj, DCTERMS['creator'], pnode))
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
                 g.add((pnode, FOAF['name'], Literal(p.get('fullname'))))
-                if opnode:
-                    g.add((pnode, OWL['sameAs'], opnode))
-                if p.get('viaf'):
-                    g.add((pnode, OWL['sameAs'], URIRef(p.get('viaf'))))
-                if p.get('orcid'):
-                    g.add((pnode, OWL['sameAs'], URIRef(p.get('orcid'))))
 
         for principal in contributors:
             p = user_info(context, principal)
             url = p.get('url')
-            opnode = None
             if not url:
                 if principal in self.authority:
                     username, url = self.authority.get(principal)
@@ -234,22 +218,10 @@ class PleiadesGrapher(object):
             else:
                 pnode = BNode()
 
-            if url.startswith('https://pleiades.stoa.org'):
-                old_url = url.replace('https://', 'http://')
-                pnode = URIRef(url)
-                opnode = URIRef(old_url)
-
             g.add((subj, DCTERMS['contributor'], pnode))
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
                 g.add((pnode, FOAF['name'], Literal(p.get('fullname'))))
-                if opnode:
-                    g.add((pnode, OWL['sameAs'], opnode))
-                if p.get('viaf'):
-                    g.add((pnode, OWL['sameAs'], URIRef(p.get('viaf'))))
-                if p.get('orcid'):
-                    g.add((pnode, OWL['sameAs'], URIRef(p.get('orcid'))))
-
 
         return g
 
@@ -387,10 +359,6 @@ class PlaceGrapher(PleiadesGrapher):
             RDFS['comment'],
             Literal(context.Description())))
 
-        orig_url = context_page.replace('https://', 'http://')
-        if orig_url and orig_url != context_page:
-            g.add((context_subj, OWL['sameAs'], URIRef(orig_url)))
-
         g = self.dcterms(context, g)
         g = self.provenance(context, g, context_subj)
 
@@ -435,10 +403,6 @@ class PlaceGrapher(PleiadesGrapher):
             name_subj = URIRef(context_page + "/" + obj.getId())
             g.add((context_subj, PLEIADES['hasName'], name_subj))
             g.add((name_subj, RDF.type, PLEIADES['Name']))
-
-            orig_url = str(name_subj).replace('https://', 'http://')
-            if orig_url and orig_url != str(name_subj):
-                g.add((name_subj, OWL['sameAs'], URIRef(orig_url)))
 
             g = self.dcterms(obj, g)
 
@@ -557,10 +521,6 @@ class PlaceGrapher(PleiadesGrapher):
             g = self.temporal(obj, g, locn_subj, vocabs=vocabs)
             g = self.provenance(obj, g, locn_subj)
             g = self.references(obj, g, locn_subj)
-
-            orig_url = str(locn_subj).replace('https://', 'http://')
-            if orig_url and orig_url != str(locn_subj):
-                g.add((locn_subj, OWL['sameAs'], URIRef(orig_url)))
 
             dc_locn = obj.getLocation()
             gridbase = "http://atlantides.org/capgrids/"
@@ -689,10 +649,6 @@ class VocabGrapher(PleiadesGrapher):
             SKOS['inScheme'],
             URIRef(vurl)))
 
-        orig_url = turl.replace('https://', 'http://')
-        if orig_url and orig_url != turl:
-            g.add((URIRef(turl), OWL['sameAs'], URIRef(orig_url)))
-
         return g
 
     def scheme(self, vocab):
@@ -707,10 +663,6 @@ class VocabGrapher(PleiadesGrapher):
             SKOS['ConceptScheme']))
 
         g = self.dcterms(vocab, g)
-
-        orig_url = vurl.replace('https://', 'http://')
-        if orig_url and orig_url != vurl:
-            g.add((URIRef(vurl), OWL['sameAs'], URIRef(orig_url)))
 
         for key, term in vocab.items():
             g = self.concept(term, g)
@@ -762,10 +714,6 @@ class RegVocabGrapher(PleiadesGrapher):
             SKOS['inScheme'],
             URIRef(vurl)))
 
-        orig_url = turl.replace('https://', 'http://')
-        if orig_url and orig_url != turl:
-            g.add((URIRef(turl), OWL['sameAs'], URIRef(orig_url)))
-
         return g
 
     def scheme(self, vocab_name):
@@ -789,10 +737,6 @@ class RegVocabGrapher(PleiadesGrapher):
             URIRef(vurl),
             DCTERMS['description'],
             Literal("Named time periods for the site.")))
-
-        orig_url = vurl.replace('https://', 'http://')
-        if orig_url and orig_url != vurl:
-            g.add((URIRef(vurl), OWL['sameAs'], URIRef(orig_url)))
 
         key = vocab_name.replace('-', '_')
         vocab = get_vocabulary(key)
@@ -839,17 +783,12 @@ class PersonsGrapher(PleiadesGrapher):
             # Non-user authors listed in the authority file.
             elif u in self.authority:
                 username, uri = self.authority[u]
-                old_uri = None
                 if username and not uri:
                     uri = "https://pleiades.stoa.org/author/" + username
-                    old_uri = uri.replace('https://', 'http://')
                 if not uri:
                     continue
                 subj = URIRef(uri)
                 g.add((subj, RDF.type, FOAF['Person']))
                 g.add((subj, FOAF['name'], Literal(u)))
-                if old_uri and old_uri != uri:
-                    g.add((URIRef(uri), OWL['sameAs'], URIRef(old_uri)))
 
         return g
-
