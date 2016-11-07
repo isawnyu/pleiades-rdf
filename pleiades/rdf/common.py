@@ -839,15 +839,17 @@ class PersonsGrapher(PleiadesGrapher):
             # Non-user authors listed in the authority file.
             elif u in self.authority:
                 username, uri = self.authority[u]
+                old_uri = None
                 if username and not uri:
                     uri = "https://pleiades.stoa.org/author/" + username
+                    old_uri = uri.replace('https://', 'http://')
                 if not uri:
                     continue
                 subj = URIRef(uri)
                 g.add((subj, RDF.type, FOAF['Person']))
-                g.add((subj, FOAF['name'], Literal(label)))
-                old_uri = uri.replace('https://', 'http://')
-                g.add((URIRef(uri), OWL['sameAs'], URIRef(old_uri)))
+                g.add((subj, FOAF['name'], Literal(u)))
+                if old_uri and old_uri != uri:
+                    g.add((URIRef(uri), OWL['sameAs'], URIRef(old_uri)))
 
         return g
 
