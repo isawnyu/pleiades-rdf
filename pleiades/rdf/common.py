@@ -114,9 +114,13 @@ def user_info(context, username):
         return {
             "id": member.getId(),
             "fullname": member.getProperty('fullname'),
-            'url': "https://pleiades.stoa.org/author/" + member.getId()}
+            'url': "https://pleiades.stoa.org/author/" + member.getId(),
+            'viaf': member.getProperty('viaf_link'),
+            'orcid': member.getProperty('orcid_link'),
+        }
     else:
-        return {"id": None, "fullname": un, 'url': None}
+        return {"id": None, "fullname": un, "url": None, "viaf": None,
+                "orcid": None}
 
 def principals(context):
     creators =  getattr(context, 'Creators', [])
@@ -194,19 +198,26 @@ class PleiadesGrapher(object):
                     username, url = self.authority.get(principal)
                     if username and not url:
                         url = "https://pleiades.stoa.org/author/" + username
+
             if url:
-                old_url = url.replace('https://', 'http://')
                 pnode = URIRef(url)
-                opnode = URIRef(old_url)
             else:
                 pnode = BNode()
-                opnode = None
+
+            if url.startswith('https://pleiades.stoa.org'):
+                old_url = url.replace('https://', 'http://')
+                opnode = URIRef(old_url)
+
             g.add((subj, DCTERMS['creator'], pnode))
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
                 g.add((pnode, FOAF['name'], Literal(p.get('fullname'))))
                 if opnode:
                     g.add((pnode, OWL['sameAs'], opnode))
+                if p.get('viaf'):
+                    g.add((pnode, OWL['sameAs'], URIRef(p.get('viaf'))))
+                if p.get('orcid'):
+                    g.add((pnode, OWL['sameAs'], URIRef(p.get('orcid'))))
 
         for principal in contributors:
             p = user_info(context, principal)
@@ -217,19 +228,28 @@ class PleiadesGrapher(object):
                     username, url = self.authority.get(principal)
                     if username and not url:
                         url = "https://pleiades.stoa.org/author/" + username
+
             if url:
+                pnode = URIRef(url)
+            else:
+                pnode = BNode()
+
+            if url.startswith('https://pleiades.stoa.org'):
                 old_url = url.replace('https://', 'http://')
                 pnode = URIRef(url)
                 opnode = URIRef(old_url)
-            else:
-                pnode = BNode()
-                opnode = None
+
             g.add((subj, DCTERMS['contributor'], pnode))
             if not url and p.get('fullname'):
                 g.add((pnode, RDF.type, FOAF['Person']))
                 g.add((pnode, FOAF['name'], Literal(p.get('fullname'))))
                 if opnode:
                     g.add((pnode, OWL['sameAs'], opnode))
+                if p.get('viaf'):
+                    g.add((pnode, OWL['sameAs'], URIRef(p.get('viaf'))))
+                if p.get('orcid'):
+                    g.add((pnode, OWL['sameAs'], URIRef(p.get('orcid'))))
+
 
         return g
 
@@ -808,10 +828,13 @@ class PersonsGrapher(PleiadesGrapher):
                 subj = URIRef(info['url'])
                 g.add((subj, RDF.type, FOAF['Person']))
                 g.add((subj, FOAF['name'], Literal(fullname)))
-
-                if fullname in self.authority:
+                if info.get('viaf'):
+                    g.add((subj, OWL['sameAs'], URIRef(info.get('viaf'))))
+                elif fullname in self.authority:
                     username, uri = self.authority[fullname]
                     g.add((subj, OWL['sameAs'], URIRef(uri)))
+                if info.get('orcid'):
+                    g.add((subj, OWL['sameAs'], URIRef(info.get('orcid'))))
 
             # Non-user authors listed in the authority file.
             elif u in self.authority:
