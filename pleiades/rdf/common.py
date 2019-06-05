@@ -304,19 +304,19 @@ class PlaceGrapher(PleiadesGrapher):
             citation_type = c.get('type')
             citation_title = c.get('short_title', '')
             citation_detail = c.get('citation_detail', '')
-            citation_range = citation_title + (citation_title and ' ' or '') + citation_detail
+            citation_range = (citation_title +
+                              (citation_title and ' ' or '') +
+                              citation_detail)
             if (identifier and
                     identifier.startswith("http://") or
                     identifier.startswith("doi") or
                     identifier.startswith("issn") or
                     identifier.startswith("ibsn")):
-                ref =  URIRef(c.get('identifier').strip())
-            else:
-                ref = BNode()
-            g.add((
-                subj,
-                CITO[mapping.get(citation_type, citation_type)],
-                ref))
+                ref = URIRef(c.get('identifier').strip())
+                g.add((
+                    subj,
+                    CITO[mapping.get(citation_type, citation_type)],
+                    ref))
             g.add((
                 subj,
                 DCTERMS['bibliographicCitation'],
