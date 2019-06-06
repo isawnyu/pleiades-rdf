@@ -300,7 +300,9 @@ class PlaceGrapher(PleiadesGrapher):
             'seeAlso': 'citesAsRelated', 'seeFurther': 'citesForInformation'}
         # seeAlso
         for c in context.getReferenceCitations():
-            identifier = c.get('identifier')
+            identifier = (
+                c.get('alternate_uri') or c.get('bibliographic_uri')
+            )
             citation_type = c.get('type')
             citation_title = c.get('short_title', '')
             citation_detail = c.get('citation_detail', '')
