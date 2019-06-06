@@ -301,8 +301,8 @@ class PlaceGrapher(PleiadesGrapher):
         # seeAlso
         for c in context.getReferenceCitations():
             identifier = (
-                c.get('alternate_uri') or c.get('bibliographic_uri')
-            )
+                c.get('alternate_uri') or c.get('bibliographic_uri') or ''
+            ).strip()
             citation_type = c.get('type')
             citation_title = c.get('short_title', '')
             citation_detail = c.get('citation_detail', '')
@@ -311,10 +311,11 @@ class PlaceGrapher(PleiadesGrapher):
                               citation_detail)
             if (identifier and
                     identifier.startswith("http://") or
+                    identifier.startswith("https://") or
                     identifier.startswith("doi") or
                     identifier.startswith("issn") or
                     identifier.startswith("ibsn")):
-                ref = URIRef(c.get('identifier').strip())
+                ref = URIRef(identifier)
                 g.add((
                     subj,
                     CITO[mapping.get(citation_type, citation_type)],
