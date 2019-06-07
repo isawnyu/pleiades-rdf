@@ -301,7 +301,7 @@ class PlaceGrapher(PleiadesGrapher):
         # seeAlso
         for c in context.getReferenceCitations():
             identifier = (
-                c.get('alternate_uri') or c.get('bibliographic_uri') or ''
+                c.get('access_uri') or c.get('bibliographic_uri') or ''
             ).strip()
             citation_type = c.get('type')
             citation_title = c.get('short_title', '')
