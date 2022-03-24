@@ -64,7 +64,7 @@ PROV = Namespace(PROVO_URI)
 log = logging.getLogger('pleiades.rdf')
 
 
-_invalid_uri_chars = '<>" {}|\\^`[]%#'
+_invalid_uri_chars = '<>" {}|\\^`[]%#\t'
 _uri_char_replacements = {c: urllib.quote_plus(c) for c in _invalid_uri_chars}
 
 
