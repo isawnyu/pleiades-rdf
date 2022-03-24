@@ -355,7 +355,7 @@ class PlaceGrapher(PleiadesGrapher):
         # primary topic
         g.add((
             feature_subj,
-            FOAF['primaryTopicOf'],
+            FOAF['isPrimaryTopicOf'],
             context_subj))
 
         # title as rdfs:label
