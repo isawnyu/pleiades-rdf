@@ -3,12 +3,13 @@
 import csv
 import os
 import re
+import urllib
 from urlparse import urlparse
 
 import geojson
 import logging
 from pleiades import capgrids
-from rdflib import BNode, Literal, Namespace, RDF, URIRef
+from rdflib import BNode, Literal, Namespace, RDF, URIRef as URIRef_rdflib
 from rdflib.graph import Graph
 from shapely.geometry import asShape, box
 from shapely import wkt
@@ -61,6 +62,24 @@ PROVO_URI = "http://www.w3.org/TR/prov-o/#"
 PROV = Namespace(PROVO_URI)
 
 log = logging.getLogger('pleiades.rdf')
+
+
+_invalid_uri_chars = '<>" {}|\\^`[]%#\t'
+_uri_char_replacements = {c: urllib.quote_plus(c) for c in _invalid_uri_chars}
+
+
+def URIRef(value):
+    """Wrap the rdflib.URIRef() constructor to selectively escape
+    characters first.
+    """
+    clean = value
+
+    for char in _uri_char_replacements:
+        if char in value:
+            clean = clean.replace(char, _uri_char_replacements[char])
+
+    return URIRef_rdflib(clean)
+
 
 def geoContext(place):
     note = place.getModernLocation() or ""
