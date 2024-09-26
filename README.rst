@@ -111,7 +111,7 @@ Pleiades.
 Pleiades
 --------
 
-`<http://pleiades.stoa.org/places/vocab#>`__
+`<https://pleiades.stoa.org/docs/partners/pleiades-rdf-vocabulary>`__
 
 The Pleiades RDF vocabulary consists of 3 classes: ``pleiades:Place``,
 ``pleiades:Location``, and ``pleiades:Name``.
