@@ -351,8 +351,11 @@ class PlaceGrapher(PleiadesGrapher):
         g = place_graph()
 
         purl = context.absolute_url()
+        portal_url = self.portal.absolute_url()
         vh_root = context.REQUEST.environ.get('VH_ROOT')
+
         if vh_root:
+            portal_url = portal_url.replace(vh_root, '')
             purl = purl.replace(vh_root, '')
 
         context_page = purl
@@ -400,8 +403,7 @@ class PlaceGrapher(PleiadesGrapher):
 
         place_types = get_vocabulary('place_types')
         place_types = dict([(t['id'], t) for t in place_types])
-        url = self.portal.absolute_url() + '/vocabularies/place-types'
-        vh_root = context.REQUEST.environ.get('VH_ROOT')
+        url = portal_url + '/vocabularies/place-types'
         pcats = set(filter(None, context.getPlaceType()))
         for pcat in pcats:
             item = place_types.get(pcat)
@@ -633,7 +635,6 @@ class PlaceGrapher(PleiadesGrapher):
             if self.wftool.getInfoFor(f, 'review_state') != 'published':
                 continue
             furl = f.absolute_url()
-            vh_root = context.REQUEST.environ.get('VH_ROOT')
             if vh_root:
                 furl = furl.replace(vh_root, '')
             feature_obj = URIRef(furl + "#this")
