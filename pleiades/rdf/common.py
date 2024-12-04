@@ -4,7 +4,7 @@ import csv
 import os
 import re
 import urllib
-from urlparse import urlparse
+from urlparse import urlparse, urljoin
 
 import geojson
 import logging
@@ -166,14 +166,24 @@ class PleiadesGrapher(object):
         self.portal = getToolByName(context, 'portal_url').getPortalObject()
         self.vocabs = self.portal['vocabularies']
         self.authority = authority
+        self.vh_root = context.REQUEST.environ.get('VH_ROOT')
+        portal_url = self.portal.absolute_url()
+        if not self.vh_root:
+            self.portal_url = portal_url
+        else:
+            # remove vh_root ('/plone' or similar) from URL
+            self.portal_url = urljoin(*portal_url.split(self.vh_root))
+
+    def public_url(self, context):
+        """We don't want the VH_ROOT ('/plone' or similar) in URLs
+        we output.
+        """
+        return urljoin(*context.absolute_url().split(self.vh_root))
 
     def dcterms(self, context, g):
         """Return a set of tuples covering DC metadata"""
 
-        curl = context.absolute_url()
-        vh_root = context.REQUEST.environ.get('VH_ROOT')
-        if vh_root:
-            curl = curl.replace(vh_root, '')
+        curl = self.public_url(context)
         subj = URIRef(curl)
 
         # Title, Description, and Modification Date
@@ -257,35 +267,26 @@ class PlaceGrapher(PleiadesGrapher):
 
     def link(self, context):
         g = place_graph()
-
-        purl = context.absolute_url()
-        vh_root = context.REQUEST.environ.get('VH_ROOT')
-        if vh_root:
-            purl = purl.replace(vh_root, '')
-        context_page = purl
-        context_subj = URIRef(context_page + "#this")
+        place_url = self.public_url(context)
+        context_subj = URIRef(place_url + "#this")
 
         remote = context.getRemoteUrl()
         if remote:
             uri = "/".join([
                 "http:/",
-                urlparse(context_page)[1],
+                urlparse(place_url)[1],
                 remote.strip("/")])
             g.add((context_subj, OWL['sameAs'], URIRef(uri + "#this")))
 
         return g
 
     def temporal(self, context, g, subj, vocabs=True):
-
         periods = get_vocabulary('time_periods')
         periods = dict([(p['id'], p) for p in periods])
-        purl = self.portal.absolute_url() + '/vocabularies/time-periods'
-        vh_root = context.REQUEST.environ.get('VH_ROOT')
-        if vh_root:
-            purl = purl.replace(vh_root, '')
+        purl = urljoin(self.portal_url, '/vocabularies/time-periods')
 
         for attestation in context.getAttestations():
-            turl = purl + "/" + attestation['timePeriod']
+            turl = urljoin(purl, attestation['timePeriod'])
             g.add((
                 subj,
                 PLEIADES['during'],
@@ -349,14 +350,8 @@ class PlaceGrapher(PleiadesGrapher):
     def place(self, context, vocabs=True):
         """Create a graph centered on a Place and its Feature."""
         g = place_graph()
-
-        purl = context.absolute_url()
-        portal_url = self.portal.absolute_url()
-        vh_root = context.REQUEST.environ.get('VH_ROOT')
-
-        if vh_root:
-            portal_url = portal_url.replace(vh_root, '')
-            purl = purl.replace(vh_root, '')
+        purl = self.public_url(context)
+        portal_url = self.portal_url
 
         context_page = purl
         context_subj = URIRef(context_page)
@@ -403,13 +398,13 @@ class PlaceGrapher(PleiadesGrapher):
 
         place_types = get_vocabulary('place_types')
         place_types = dict([(t['id'], t) for t in place_types])
-        url = portal_url + '/vocabularies/place-types'
+        url = urljoin(portal_url, '/vocabularies/place-types')
         pcats = set(filter(None, context.getPlaceType()))
         for pcat in pcats:
             item = place_types.get(pcat)
             if not item:
                 continue
-            iurl = url + '/' + pcat
+            iurl = urljoin(url, pcat)
             g.add((
                 context_subj,
                 PLEIADES['hasFeatureType'],
@@ -436,7 +431,7 @@ class PlaceGrapher(PleiadesGrapher):
                 SKOS['altLabel'],
                 name))
 
-            name_subj = URIRef(context_page + "/" + obj.getId())
+            name_subj = URIRef(urljoin(context_page, obj.getId()))
             g.add((context_subj, PLEIADES['hasName'], name_subj))
             g.add((name_subj, RDF.type, PLEIADES['Name']))
 
@@ -445,7 +440,6 @@ class PlaceGrapher(PleiadesGrapher):
                 g.add((name_subj, OWL['sameAs'], URIRef(orig_url)))
 
             g = self.dcterms(obj, g)
-
             g = self.temporal(obj, g, name_subj, vocabs=vocabs)
             g = self.provenance(obj, g, name_subj)
             g = self.references(obj, g, name_subj)
@@ -552,7 +546,7 @@ class PlaceGrapher(PleiadesGrapher):
         # Locations
         for obj in locs:
 
-            locn_subj = URIRef(context_page + "/" + obj.getId())
+            locn_subj = URIRef(urljoin(context_page, obj.getId()))
             g.add((context_subj, PLEIADES['hasLocation'], locn_subj))
             g.add((locn_subj, RDF.type, PLEIADES['Location']))
 
@@ -634,9 +628,7 @@ class PlaceGrapher(PleiadesGrapher):
         for f in context.getConnectedPlaces():
             if self.wftool.getInfoFor(f, 'review_state') != 'published':
                 continue
-            furl = f.absolute_url()
-            if vh_root:
-                furl = furl.replace(vh_root, '')
+            furl = self.public_url(f)
             feature_obj = URIRef(furl + "#this")
             g.add((feature_subj, SPATIAL['C'], feature_obj))
             g.add((context_subj, RDFS['seeAlso'], URIRef(furl)))
@@ -659,10 +651,7 @@ class VocabGrapher(PleiadesGrapher):
     def concept(self, term, g):
         """Return a set of tuples representing the term"""
 
-        turl = term.absolute_url()
-        vh_root = term.REQUEST.environ.get('VH_ROOT')
-        if vh_root:
-            turl = turl.replace(vh_root, '')
+        turl = self.public_url(term)
         term_ref = URIRef(turl)
         label = term.getTermValue()
         note = term.Description()
@@ -683,10 +672,7 @@ class VocabGrapher(PleiadesGrapher):
                 Literal(note, "en")))
 
         vocab = aq_parent(aq_inner(term))
-        vurl = vocab.absolute_url()
-        vh_root = vocab.REQUEST.environ.get('VH_ROOT')
-        if vh_root:
-            vurl = vurl.replace(vh_root, '')
+        vurl = self.public_url(vocab)
         g.add((
             term_ref,
             SKOS['inScheme'],
@@ -700,10 +686,7 @@ class VocabGrapher(PleiadesGrapher):
 
     def scheme(self, vocab):
         g = place_graph()
-        vurl = vocab.absolute_url()
-        vh_root = vocab.REQUEST.environ.get('VH_ROOT')
-        if vh_root:
-            vurl = vurl.replace(vh_root, '')
+        vurl = self.public_url(vocab)
         g.add((
             URIRef(vurl),
             RDF.type,
@@ -725,12 +708,8 @@ class RegVocabGrapher(PleiadesGrapher):
 
     def concept(self, vocab_name, term, g):
         """Return a set of tuples representing the term"""
-
-        vurl = self.portal.absolute_url() + '/vocabularies/' + vocab_name
-        turl = vurl + '/' + term['id']
-        vh_root = self.request.environ.get('VH_ROOT')
-        if vh_root:
-            turl = turl.replace(vh_root, '')
+        vurl = urljoin(self.portal_url, '/vocabularies/', vocab_name)
+        turl = urljoin(vurl, term['id'])
         term_ref = URIRef(turl)
         label = term['title']
         note = term['description']
@@ -757,9 +736,6 @@ class RegVocabGrapher(PleiadesGrapher):
                 OWL['sameAs'],
                 URIRef(same_as)))
 
-        vh_root = self.request.environ.get('VH_ROOT')
-        if vh_root:
-            vurl = vurl.replace(vh_root, '')
         g.add((
             term_ref,
             SKOS['inScheme'],
@@ -773,10 +749,8 @@ class RegVocabGrapher(PleiadesGrapher):
 
     def scheme(self, vocab_name):
         g = place_graph()
-        vurl = self.portal.absolute_url() + '/vocabularies/%s' % vocab_name
-        vh_root = self.request.environ.get('VH_ROOT')
-        if vh_root:
-            vurl = vurl.replace(vh_root, '')
+        vurl = urljoin(self.portal_url, '/vocabularies/', vocab_name)
+
         g.add((
             URIRef(vurl),
             RDF.type,
