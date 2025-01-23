@@ -178,7 +178,11 @@ class PleiadesGrapher(object):
         """We don't want the VH_ROOT ('/plone' or similar) in URLs
         we output.
         """
-        return urljoin(*context.absolute_url().split(self.vh_root))
+        context_url = context.absolute_url()
+        if self.vh_root in context_url:
+            return urljoin(*context_url.split(self.vh_root))
+        else:
+            return context_url
 
     def dcterms(self, context, g):
         """Return a set of tuples covering DC metadata"""
