@@ -179,7 +179,7 @@ class PleiadesGrapher(object):
         we output.
         """
         context_url = context.absolute_url()
-        if self.vh_root in context_url:
+        if self.vh_root and self.vh_root in context_url:
             return urljoin(*context_url.split(self.vh_root))
         else:
             return context_url
